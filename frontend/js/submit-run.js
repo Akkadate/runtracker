@@ -36,7 +36,7 @@ async function initializeSubmitRunPage() {
         
         // 日付フィールドのデフォルト値を今日に設定
         const today = new Date().toISOString().split('T')[0];
-        document.getElementById('runDate').value = today;
+        document.getElementById('rundate').value = today;
         
         // イメージプレビュー設定
         // 画像選択時のプレビュー
@@ -56,7 +56,7 @@ async function initializeSubmitRunPage() {
         document.getElementById('submitRunForm').addEventListener('submit', async (event) => {
             event.preventDefault();
             
-            const runDate = document.getElementById('runDate').value;
+            const rundate = document.getElementById('rundate').value;
             const distance = document.getElementById('distance').value;
             const duration = document.getElementById('duration').value;
             const proofImage = document.getElementById('proofImage').files[0];
@@ -73,8 +73,8 @@ async function initializeSubmitRunPage() {
                 
                 // ファイルをアップロード
                 const additionalData = {
-                    userId: profile.userId,
-                    runDate: runDate,
+                    userid: profile.userId,
+                    rundate: rundate,
                     distance: distance,
                     duration: duration
                 };
@@ -87,10 +87,10 @@ async function initializeSubmitRunPage() {
                 
                 // 現在のランデータを保存（共有用）
                 currentRunData = {
-                    runDate: runDate,
+                    rundate: rundate,
                     distance: distance,
                     duration: duration,
-                    imageUrl: result.imageUrl
+                    imageurl: result.imageurl
                 };
                 
                 // 共有ボタンのイベントリスナーを設定

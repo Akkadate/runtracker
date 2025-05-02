@@ -47,12 +47,12 @@ router.post('/upload', async (req, res) => {
             .from('runs')
             .insert([
                 {
-                    userId,
-                    runDate,
+                    userid,
+                    rundate,
                     distance: parseFloat(distance),
                     duration: parseFloat(duration),
-                    imageUrl,
-                    createdAt: new Date()
+                    imageurl,
+                    createdat: new Date()
                 }
             ])
             .select();
@@ -79,7 +79,7 @@ router.get('/stats/:userId', async (req, res) => {
         const { data: runs, error } = await supabase
             .from('runs')
             .select('*')
-            .eq('userId', userId)
+            .eq('userid', userId)
             .order('runDate', { ascending: true });
         
         if (error) throw error;

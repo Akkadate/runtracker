@@ -40,8 +40,8 @@ function showProfileMode(profile, userData) {
     // プロファイル情報を表示
     document.getElementById('profileImage').src = profile.pictureUrl;
     document.getElementById('displayName').textContent = profile.displayName;
-    document.getElementById('nationalId').textContent = userData.nationalId;
-    document.getElementById('phoneNumber').textContent = userData.phoneNumber;
+    document.getElementById('nationalid').textContent = userData.nationalid;
+    document.getElementById('phonenumber').textContent = userData.phonenumber;
     
     // プロファイルコンテナを表示
     document.getElementById('profileContainer').classList.remove('hidden');
@@ -59,16 +59,16 @@ function showRegistrationForm(profile) {
     document.getElementById('userForm').addEventListener('submit', async (event) => {
         event.preventDefault();
         
-        const nationalId = document.getElementById('nationalId').value;
-        const phoneNumber = document.getElementById('phoneNumber').value;
+        const nationalid = document.getElementById('nationalid').value;
+        const phonnumber = document.getElementById('phonenumber').value;
         
         // 入力検証
-        if (nationalId.length !== 13 || !/^\d+$/.test(nationalId)) {
+        if (nationalid.length !== 13 || !/^\d+$/.test(nationalid)) {
             alert('กรุณากรอกเลขบัตรประชาชน 13 หลัก');
             return;
         }
         
-        if (phoneNumber.length !== 10 || !/^\d+$/.test(phoneNumber)) {
+        if (phonenumber.length !== 10 || !/^\d+$/.test(phonenumber)) {
             alert('กรุณากรอกเบอร์โทรศัพท์ 10 หลัก');
             return;
         }
@@ -76,11 +76,11 @@ function showRegistrationForm(profile) {
         try {
             // ユーザーデータを登録
             const userData = {
-                userId: profile.userId,
-                displayName: profile.displayName,
-                pictureUrl: profile.pictureUrl,
-                nationalId: nationalId,
-                phoneNumber: phoneNumber
+                userid: profile.userId,
+                displayname: profile.displayName,
+                pictureurl: profile.pictureUrl,
+                nationalid: nationalid,
+                phonenumber: phonenumber
             };
             
             await apiRequest('/api/users', 'POST', userData);

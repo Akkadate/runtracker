@@ -59,8 +59,8 @@ async function loadUserStats(userId) {
         userStats = await apiRequest('/api/runs/stats/' + userId);
         
         // 統計データを表示
-        document.getElementById('totalDistance').textContent = userStats.totalDistance.toFixed(2);
-        document.getElementById('totalRuns').textContent = userStats.totalRuns;
+        document.getElementById('totaldistance').textContent = userStats.totaldistance.toFixed(2);
+        document.getElementById('totalruns').textContent = userStats.totalruns;
         
         // ユーザーの現在のランクを特定
         if (rankingData) {
@@ -91,8 +91,8 @@ async function loadRankingData() {
             
             row.innerHTML = `
                 <td>${index + 1}</td>
-                <td>${runner.displayName}</td>
-                <td>${runner.totalDistance.toFixed(2)}</td>
+                <td>${runner.displayname}</td>
+                <td>${runner.totaldistance.toFixed(2)}</td>
             `;
             
             tableBody.appendChild(row);
@@ -124,7 +124,7 @@ function renderProgressChart() {
     const chartData = sortedData.map(run => {
         cumulativeDistance += parseFloat(run.distance);
         return {
-            x: new Date(run.runDate),
+            x: new Date(run.rundate),
             y: cumulativeDistance
         };
     });
@@ -189,7 +189,7 @@ function renderProgressChart() {
 function shareStats() {
     if (!userStats) return;
     
-    const message = `📊 สถิติการวิ่งของฉัน\n🏁 ระยะทางรวม: ${userStats.totalDistance.toFixed(2)} กม.\n🏃 จำนวนครั้ง: ${userStats.totalRuns} ครั้ง\n🏆 อันดับปัจจุบัน: ${document.getElementById('currentRank').textContent}`;
+    const message = `📊 สถิติการวิ่งของฉัน\n🏁 ระยะทางรวม: ${userStats.totaldistance.toFixed(2)} กม.\n🏃 จำนวนครั้ง: ${userstats.totalruns} ครั้ง\n🏆 อันดับปัจจุบัน: ${document.getElementById('currentRank').textContent}`;
     
     // LINEでメッセージを共有
     if (liff.isApiAvailable('shareTargetPicker')) {
