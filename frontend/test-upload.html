@@ -51,7 +51,7 @@
             const resultDiv = document.getElementById('result');
             resultDiv.innerHTML = "กำลังส่งข้อมูล...";
             
-            try {
+             try {
                 const userid = document.getElementById('userid').value;
                 const rundate = document.getElementById('rundate').value;
                 const distance = document.getElementById('distance').value;
@@ -82,24 +82,31 @@
                     body: formData
                 });
                 
-                const responseStatus = response.status;
-                resultDiv.innerHTML += `\n\nสถานะการตอบกลับ: ${responseStatus}`;
-                
-                let responseData;
-                try {
-                    responseData = await response.json();
-                    resultDiv.innerHTML += `\n\nข้อมูลการตอบกลับ:\n${JSON.stringify(responseData, null, 2)}`;
-                } catch (jsonError) {
-                    const responseText = await response.text();
-                    resultDiv.innerHTML += `\n\nข้อความตอบกลับ:\n${responseText}`;
-                }
-                
-                if (responseStatus >= 200 && responseStatus < 300) {
-                    resultDiv.innerHTML = "✅ การทดสอบสำเร็จ!\n\n" + resultDiv.innerHTML;
-                } else {
-                    resultDiv.innerHTML = "❌ การทดสอบล้มเหลว!\n\n" + resultDiv.innerHTML;
-                }
-            } catch (error) {
+                       // แก้ไขส่วนการจัดการ response ในไฟล์ test-upload.html
+                            const responseStatus = response.status;
+                            resultDiv.innerHTML += `\n\nสถานะการตอบกลับ: ${responseStatus}`;
+
+                            let responseText;
+                            try {
+                                responseText = await response.text();
+                                resultDiv.innerHTML += `\n\nข้อความตอบกลับ: ${responseText}`;
+                                
+                                try {
+                                    const responseData = JSON.parse(responseText);
+                                    resultDiv.innerHTML += `\n\nข้อมูลการตอบกลับ (JSON):\n${JSON.stringify(responseData, null, 2)}`;
+                                } catch (jsonError) {
+                                    // ไม่ใช่ JSON ก็ไม่เป็นไร แสดงข้อความธรรมดา
+                                }
+                            } catch (textError) {
+                                resultDiv.innerHTML += `\n\nไม่สามารถอ่านข้อความตอบกลับได้: ${textError.message}`;
+                            }
+                        
+                        if (responseStatus >= 200 && responseStatus < 300) {
+                            resultDiv.innerHTML = "✅ การทดสอบสำเร็จ!\n\n" + resultDiv.innerHTML;
+                        } else {
+                            resultDiv.innerHTML = "❌ การทดสอบล้มเหลว!\n\n" + resultDiv.innerHTML;
+                        }
+                } catch (error) {
                 resultDiv.innerHTML = `❌ เกิดข้อผิดพลาด: ${error.message}\n\n` + resultDiv.innerHTML;
                 console.error('Error:', error);
             }
