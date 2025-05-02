@@ -186,7 +186,6 @@ async function loadRankingData(userId, client) {
     }
 }
 
-// แก้ไขฟังก์ชัน renderProgressChart ให้มีการจัดการข้อผิดพลาดที่ดีขึ้น
 function renderProgressChart(runData) {
     try {
         console.log("Starting renderProgressChart with data:", runData);
@@ -211,49 +210,33 @@ function renderProgressChart(runData) {
             return;
         }
         
+        // เรียงลำดับข้อมูลตามวันที่
+        validData.sort((a, b) => new Date(a.rundate) - new Date(b.rundate));
+        
+        // สร้างข้อมูลสำหรับกราฟในรูปแบบที่ไม่ใช้ time scale
+        const labels = validData.map(run => {
+            const date = new Date(run.rundate);
+            return date.toLocaleDateString('th-TH', { day: '2-digit', month: 'short' });
+        });
+        
         // คำนวณค่าสะสม
         let cumulativeDistance = 0;
-        const chartData = [];
+        const data = validData.map(run => {
+            cumulativeDistance += parseFloat(run.distance);
+            return cumulativeDistance;
+        });
         
-        for (const run of validData) {
-            try {
-                // แปลงข้อมูลให้ถูกรูปแบบ
-                const date = new Date(run.rundate);
-                const distance = parseFloat(run.distance);
-                
-                if (!isNaN(distance) && date instanceof Date && !isNaN(date)) {
-                    cumulativeDistance += distance;
-                    chartData.push({
-                        x: date,
-                        y: cumulativeDistance
-                    });
-                }
-            } catch (err) {
-                console.warn("Error processing run data item:", run, err);
-            }
-        }
+        console.log("Chart data prepared:", { labels, data });
         
-        console.log("Processed chart data:", chartData);
-        
-        if (chartData.length === 0) {
-            console.warn("No valid data points after processing");
-            return;
-        }
-        
-        // ตรวจสอบว่า Chart.js โหลดเรียบร้อยแล้ว
-        if (typeof Chart === 'undefined') {
-            console.error("Chart.js library is not loaded");
-            return;
-        }
-        
-        // สร้างกราฟ
-        console.log("Creating chart...");
+        // สร้างกราฟแบบไม่ใช้ time scale
+        console.log("Creating chart without time scale...");
         const chart = new Chart(chartElement.getContext('2d'), {
             type: 'line',
             data: {
+                labels: labels,
                 datasets: [{
                     label: 'ระยะทางสะสม (กม.)',
-                    data: chartData,
+                    data: data,
                     borderColor: '#06c755',
                     backgroundColor: 'rgba(6, 199, 85, 0.1)',
                     fill: true,
@@ -265,13 +248,6 @@ function renderProgressChart(runData) {
                 maintainAspectRatio: false,
                 scales: {
                     x: {
-                        type: 'time',
-                        time: {
-                            unit: 'day',
-                            displayFormats: {
-                                day: 'DD MMM'
-                            }
-                        },
                         title: {
                             display: true,
                             text: 'วันที่'
