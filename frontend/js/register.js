@@ -58,9 +58,10 @@ function showRegistrationForm(profile) {
     document.getElementById('registrationForm').classList.remove('hidden');
     document.getElementById('profileContainer').classList.add('hidden');
     
-    // สร้างฟอร์มใหม่
+    // สร้างฟอร์มใหม่แบบง่ายๆ คล้ายกับไฟล์ HTML ที่ทดสอบสำเร็จ
     const formContainer = document.getElementById('registrationForm');
     formContainer.innerHTML = `
+        <h2>กรอกข้อมูลส่วนตัว</h2>
         <div class="form-group">
             <label for="nationalid">เลขบัตรประชาชน:</label>
             <input type="text" id="nationalid" maxlength="13" required>
@@ -69,37 +70,34 @@ function showRegistrationForm(profile) {
             <label for="phonenumber">เบอร์โทรศัพท์:</label>
             <input type="tel" id="phonenumber" maxlength="10" required>
         </div>
-        <button id="submitButton" class="btn-primary">บันทึกข้อมูล</button>
+        <button id="submitBtn" class="btn-primary">บันทึกข้อมูล</button>
+        <div id="statusMessage"></div>
     `;
     
-    // กำหนด event handler
-    const submitButton = document.getElementById('submitButton');
-    submitButton.onclick = async function() {
-
-        alert('Button clicked!');
-        console.log('Button clicked');
-
+    // ใช้ onclick แทน addEventListener
+    document.getElementById('submitBtn').onclick = async function() {
+        const statusMessage = document.getElementById('statusMessage');
+        statusMessage.innerHTML = "กำลังส่งข้อมูล...";
         
         try {
-            console.log('Submit button clicked');
-            
+            // ดึงข้อมูลจากฟอร์ม
             const nationalid = document.getElementById('nationalid').value;
             const phonenumber = document.getElementById('phonenumber').value;
             
-            console.log('Input values:', { nationalid, phonenumber });
+            console.log('ข้อมูลที่กรอก:', { nationalid, phonenumber });
             
             // ตรวจสอบข้อมูล
             if (nationalid.length !== 13 || !/^\d+$/.test(nationalid)) {
-                alert('กรุณากรอกเลขบัตรประชาชน 13 หลัก');
+                statusMessage.innerHTML = "กรุณากรอกเลขบัตรประชาชน 13 หลัก";
                 return;
             }
             
             if (phonenumber.length !== 10 || !/^\d+$/.test(phonenumber)) {
-                alert('กรุณากรอกเบอร์โทรศัพท์ 10 หลัก');
+                statusMessage.innerHTML = "กรุณากรอกเบอร์โทรศัพท์ 10 หลัก";
                 return;
             }
             
-            // สร้างข้อมูลที่จะส่ง
+            // แสดงข้อมูลที่จะส่ง
             const userData = {
                 userid: profile.userId,
                 displayname: profile.displayName,
@@ -108,31 +106,36 @@ function showRegistrationForm(profile) {
                 phonenumber: phonenumber
             };
             
-            console.log('User data to send:', userData);
+            console.log('ข้อมูลที่จะส่ง:', userData);
+            statusMessage.innerHTML = "กำลังส่งข้อมูล...";
             
-            // ใช้ fetch API โดยตรง
-            console.log('Sending request to API...');
+            // ส่งข้อมูลโดยตรงไม่ผ่าน apiRequest
             const response = await fetch('https://runtracker.devapp.cc/api/users', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ' + liff.getAccessToken()
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(userData)
             });
             
-            console.log('Response received:', response.status);
+            console.log('สถานะการตอบกลับ:', response.status);
             
+            // รับผลลัพธ์
             const result = await response.json();
-            console.log('API result:', result);
+            console.log('ผลลัพธ์ API:', result);
             
-            // แสดงผลสำเร็จ
+            // แสดงข้อความสำเร็จ
+            statusMessage.innerHTML = "ลงทะเบียนเรียบร้อยแล้ว";
             alert('ลงทะเบียนเรียบร้อยแล้ว');
+            
+            // แสดงหน้าโปรไฟล์
             showProfileMode(profile, userData);
         } catch (error) {
-            console.error('Error during registration:', error);
-            alert('เกิดข้อผิดพลาดในการลงทะเบียน: ' + error.message);
+            console.error('เกิดข้อผิดพลาด:', error);
+            statusMessage.innerHTML = "เกิดข้อผิดพลาด: " + error.message;
         }
+        
+        return false; // ป้องกันการส่งฟอร์มตามปกติ
     };
 }
 
