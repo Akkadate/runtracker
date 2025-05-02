@@ -16,8 +16,8 @@ const PORT = process.env.PORT || 4900;
 
 // ค่า SSL options
 const sslOptions = {
-    key: fs.readFileSync('/path/to/privkey.pem'),  // เปลี่ยนเป็นเส้นทางจริงของไฟล์ private key
-    cert: fs.readFileSync('/path/to/fullchain.pem')  // เปลี่ยนเป็นเส้นทางจริงของไฟล์ certificate
+    key: fs.readFileSync('/etc/letsencrypt/live/runtracker.devapp.cc/privkey.pem'),  // เปลี่ยนเป็นเส้นทางจริงของไฟล์ private key
+    cert: fs.readFileSync('/etc/letsencrypt/live/runtracker.devapp.cc/fullchain.pem')  // เปลี่ยนเป็นเส้นทางจริงของไฟล์ certificate
 };
 
 // ミドルウェアの設定
