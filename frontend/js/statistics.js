@@ -347,7 +347,7 @@ async function loadRankingData(userId, client) {
             
             // อัปเดตอันดับของผู้ใช้ ---------------------------------------------------
             console.log("Calculating user rank for user:", userid);
-            const userRankIndex = data.findIndex(item => item.userid === userid);
+            const userRankIndex = data.findIndex(item => item.userid === userId);
             console.log("User rank index:", userRankIndex);
             
             const currentRankElement = document.getElementById('currentRank');
