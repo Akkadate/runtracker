@@ -1,81 +1,93 @@
+// รวมเหลือเพียง listener เดียว
 document.addEventListener('DOMContentLoaded', () => {
-    // LIFFが初期化されるのを待つ
-    if (liff.isInClient() && liff.isLoggedIn()) {
-        initializeRegisterPage();
+    console.log('DOM loaded');
+    
+    // ทดสอบ LIFF
+    if (typeof liff !== 'undefined') {
+        console.log('LIFF is defined');
+        console.log('LIFF version:', liff.getVersion());
+        console.log('LIFF is logged in:', liff.isLoggedIn());
+        console.log('LIFF is in client:', liff.isInClient());
+        
+        // เริ่มต้นการทำงานเมื่อ LIFF พร้อม
+        if (liff.isLoggedIn()) {
+            initializeRegisterPage();
+        } else {
+            // หากยังไม่ได้ล็อกอิน ให้เข้าสู่ระบบก่อน
+            liff.login();
+        }
     } else {
-        // 定期的にチェック
-        const checkLiffInterval = setInterval(() => {
-            if (liff.isInClient() && liff.isLoggedIn()) {
-                clearInterval(checkLiffInterval);
-                initializeRegisterPage();
-            }
-        }, 500);
+        console.error('LIFF is not defined!');
+        alert('ไม่สามารถเชื่อมต่อกับ LINE ได้ กรุณาลองใหม่อีกครั้ง');
     }
 });
 
-
-
-
 async function initializeRegisterPage() {
     try {
-        // ユーザープロファイルの取得
+        // ดึงข้อมูลโปรไฟล์ผู้ใช้
         const profile = await liff.getProfile();
+        console.log('ได้รับข้อมูลโปรไฟล์:', profile);
         
-        // LINE UserIDを使用してユーザー情報を取得
-        const userData = await apiRequest('/api/users/' + profile.userId);
-        
-        if (userData) {
-            // ユーザーデータが存在する場合は、プロファイル表示モードに切り替える
-            showProfileMode(profile, userData);
-        } else {
-            // ユーザーデータが存在しない場合は、登録フォームを表示
+        // ตรวจสอบว่ามีข้อมูลผู้ใช้อยู่แล้วหรือไม่
+        try {
+            const response = await fetch('https://runtracker.devapp.cc/api/users/' + profile.userId);
+            
+            if (response.ok) {
+                const userData = await response.json();
+                console.log('พบข้อมูลผู้ใช้:', userData);
+                showProfileMode(profile, userData);
+            } else {
+                console.log('ไม่พบข้อมูลผู้ใช้ แสดงฟอร์มลงทะเบียน');
+                showRegistrationForm(profile);
+            }
+        } catch (error) {
+            console.error('ไม่สามารถตรวจสอบข้อมูลผู้ใช้:', error);
             showRegistrationForm(profile);
         }
     } catch (error) {
-        console.error('Error initializing register page:', error);
-        // エラーが発生した場合も登録フォームを表示
-        const profile = await liff.getProfile();
-        showRegistrationForm(profile);
+        console.error('เกิดข้อผิดพลาดในการเริ่มต้น:', error);
+        alert('เกิดข้อผิดพลาดในการเชื่อมต่อกับ LINE: ' + error.message);
     }
 }
 
 function showProfileMode(profile, userData) {
-    // プロファイル情報を表示
-    document.getElementById('profileImage').src = profile.pictureUrl;
+    // แสดงข้อมูลโปรไฟล์
+    const profileImage = document.getElementById('profileImage');
+    if (profileImage && profile.pictureUrl) {
+        profileImage.src = profile.pictureUrl;
+    }
+    
     document.getElementById('displayName').textContent = profile.displayName;
     document.getElementById('nationalid').textContent = userData.nationalid;
     document.getElementById('phonenumber').textContent = userData.phonenumber;
     
-    // プロファイルコンテナを表示
+    // แสดงโปรไฟล์
     document.getElementById('profileContainer').classList.remove('hidden');
-    // 登録フォームを非表示
     document.getElementById('registrationForm').classList.add('hidden');
 }
 
-
 function showRegistrationForm(profile) {
-    // 1. แสดงฟอร์มเช่นเดิม
+    // แสดงฟอร์ม
     document.getElementById('registrationForm').classList.remove('hidden');
     document.getElementById('profileContainer').classList.add('hidden');
     
-    // 2. สร้างฟอร์มใหม่ แต่ให้คงโครงสร้างเดิม
+    // สร้างฟอร์ม
     const formContainer = document.getElementById('registrationForm');
     formContainer.innerHTML = `
-        <form id="userForm">
-            <div class="form-group">
-                <label for="nationalid">เลขบัตรประชาชน:</label>
-                <input type="text" id="nationalid" maxlength="13" required>
-            </div>
-            <div class="form-group">
-                <label for="phonenumber">เบอร์โทรศัพท์:</label>
-                <input type="tel" id="phonenumber" maxlength="10" required>
-            </div>
-            <button type="button" id="submitBtn" class="btn-primary">บันทึกข้อมูล</button>
-            <div id="statusMessage"></div>
-        </form>
+        <h2>กรอกข้อมูลส่วนตัว</h2>
+        <div class="form-group">
+            <label for="nationalid">เลขบัตรประชาชน:</label>
+            <input type="text" id="nationalid" maxlength="13" required>
+        </div>
+        <div class="form-group">
+            <label for="phonenumber">เบอร์โทรศัพท์:</label>
+            <input type="tel" id="phonenumber" maxlength="10" required>
+        </div>
+        <button type="button" id="submitBtn" class="btn-primary">บันทึกข้อมูล</button>
+        <div id="statusMessage"></div>
     `;
     
-    // 3. ใช้ onclick แทน addEventListener
+    // กำหนด event handler
     document.getElementById('submitBtn').onclick = async function() {
         try {
             const nationalid = document.getElementById('nationalid').value;
@@ -105,7 +117,7 @@ function showRegistrationForm(profile) {
             
             console.log('ข้อมูลที่จะส่ง:', userData);
             
-            // 4. ส่งข้อมูลโดยตรงไม่ผ่าน apiRequest
+            // ส่งข้อมูล
             const response = await fetch('https://runtracker.devapp.cc/api/users', {
                 method: 'POST',
                 headers: {
@@ -119,10 +131,10 @@ function showRegistrationForm(profile) {
             const result = await response.json();
             console.log('ผลลัพธ์ API:', result);
             
-            // 5. แสดงผลสำเร็จ
+            // แสดงผลสำเร็จ
             alert('ลงทะเบียนเรียบร้อยแล้ว');
             
-            // 6. แสดงหน้าโปรไฟล์
+            // แสดงหน้าโปรไฟล์
             showProfileMode(profile, userData);
         } catch (error) {
             console.error('เกิดข้อผิดพลาด:', error);
@@ -130,18 +142,3 @@ function showRegistrationForm(profile) {
         }
     };
 }
-
-// เพิ่มโค้ดนี้ในส่วนต้นของ register.js
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOM loaded');
-    
-    // ทดสอบ LIFF
-    if (typeof liff !== 'undefined') {
-        console.log('LIFF is defined');
-        console.log('LIFF version:', liff.getVersion());
-        console.log('LIFF is logged in:', liff.isLoggedIn());
-        console.log('LIFF is in client:', liff.isInClient());
-    } else {
-        console.error('LIFF is not defined!');
-    }
-});
