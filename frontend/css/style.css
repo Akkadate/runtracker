@@ -13,16 +13,16 @@ body {
 
 /* เพิ่มในไฟล์ style.css หรือในแท็ก <style> ในหัวของหน้า */
 .chart-container {
-    margin-bottom: 20px;
-    height: 250px !important;
-    max-height: 250px !important;
-    position: relative;
-    overflow: hidden;
+    margin-bottom: 10px !important;
+    margin-top: 0 !important;
+    padding-bottom: 0 !important;
+    padding-top: 0 !important;
 }
 
 .chart-container h2 {
-    margin-bottom: 10px;
-    font-size: 1.2rem;
+    margin-top: 0;
+    margin-bottom: 5px;
+    font-size: 1.1rem;
 }
 
 .chart-container canvas {
