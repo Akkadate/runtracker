@@ -101,13 +101,13 @@ router.get('/:userId', async (req, res) => {
 // 新しいユーザーを登録
 router.post('/', async (req, res) => {
     try {
-        const { userId, displayName, pictureUrl, nationalId, phoneNumber } = req.body;
+        const { userid, displayname, pictureurl, nationalid, phonenumber } = req.body;
         
         // แสดงข้อมูลที่ได้รับเพื่อตรวจสอบ
-        console.log('Received data:', { userId, displayName, pictureUrl, nationalId, phoneNumber });
+        console.log('Received data:', { userid, displayname, pictureurl, nationalid, phonenumber });
         
         // 入力検証
-        if (!userId || !nationalId || !phoneNumber) {
+        if (!userid || !nationalid || !phonenumber) {
             return res.status(400).json({ message: 'Missing required fields' });
         }
         
@@ -115,7 +115,7 @@ router.post('/', async (req, res) => {
         const { data: existingUser, error: checkError } = await supabase
             .from('users')
             .select('*')
-            .eq('userid', userId)  // ตรวจสอบชื่อฟิลด์ให้ตรงกับ DB
+            .eq('userid', userid)  // ตรวจสอบชื่อฟิลด์ให้ตรงกับ DB
             .limit(1);
         
         if (checkError) throw checkError;
@@ -129,10 +129,10 @@ router.post('/', async (req, res) => {
             
             // สร้างข้อมูลที่จะอัปเดต
             const updateData = {
-                displayname: displayName,  // ตรวจสอบชื่อฟิลด์ให้ตรงกับ DB
-                pictureurl: pictureUrl,    // ตรวจสอบชื่อฟิลด์ให้ตรงกับ DB
-                nationalid: nationalId,    // ตรวจสอบชื่อฟิลด์ให้ตรงกับ DB
-                phonenumber: phoneNumber,  // ตรวจสอบชื่อฟิลด์ให้ตรงกับ DB
+                displayname: displayname,  // ตรวจสอบชื่อฟิลด์ให้ตรงกับ DB
+                pictureurl: pictureurl,    // ตรวจสอบชื่อฟิลด์ให้ตรงกับ DB
+                nationalid: nationalid,    // ตรวจสอบชื่อฟิลด์ให้ตรงกับ DB
+                phonenumber: phonenumber,  // ตรวจสอบชื่อฟิลด์ให้ตรงกับ DB
                 updatedat: new Date()      // ตรวจสอบชื่อฟิลด์ให้ตรงกับ DB
             };
             
@@ -141,7 +141,7 @@ router.post('/', async (req, res) => {
             const { data, error } = await supabase
                 .from('users')
                 .update(updateData)
-                .eq('userid', userId)  // ตรวจสอบชื่อฟิลด์ให้ตรงกับ DB
+                .eq('userid', userid)  // ตรวจสอบชื่อฟิลด์ให้ตรงกับ DB
                 .select();
             
             if (error) {
@@ -158,11 +158,11 @@ router.post('/', async (req, res) => {
         
         // สร้างข้อมูลที่จะเพิ่ม
         const insertData = {
-            userid: userId,              // ตรวจสอบชื่อฟิลด์ให้ตรงกับ DB
-            displayname: displayName,    // ตรวจสอบชื่อฟิลด์ให้ตรงกับ DB
-            pictureurl: pictureUrl,      // ตรวจสอบชื่อฟิลด์ให้ตรงกับ DB
-            nationalid: nationalId,      // ตรวจสอบชื่อฟิลด์ให้ตรงกับ DB
-            phonenumber: phoneNumber,    // ตรวจสอบชื่อฟิลด์ให้ตรงกับ DB
+            userid: userid,              // ตรวจสอบชื่อฟิลด์ให้ตรงกับ DB
+            displayname: displayname,    // ตรวจสอบชื่อฟิลด์ให้ตรงกับ DB
+            pictureurl: pictureurl,      // ตรวจสอบชื่อฟิลด์ให้ตรงกับ DB
+            nationalid: nationalid,      // ตรวจสอบชื่อฟิลด์ให้ตรงกับ DB
+            phonenumber: phonenumber,    // ตรวจสอบชื่อฟิลด์ให้ตรงกับ DB
             createdat: new Date(),       // ตรวจสอบชื่อฟิลด์ให้ตรงกับ DB
             updatedat: new Date()        // ตรวจสอบชื่อฟิลด์ให้ตรงกับ DB
         };
