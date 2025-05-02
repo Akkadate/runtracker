@@ -96,35 +96,57 @@ async function apiRequest(endpoint, method = 'GET', data = null) {
 }
 
 // ファイルアップロード用のヘルパー関数
+// ฟังก์ชันอัปโหลดไฟล์ที่แก้ไขใหม่
 async function uploadFile(endpoint, file, additionalData = {}) {
-    const url = API_BASE_URL + endpoint;
-    
-    const formData = new FormData();
-    formData.append('file', file);
-    
-    // 追加データをフォームデータに追加
-    for (const key in additionalData) {
-        formData.append(key, additionalData[key]);
-    }
-    
-    const options = {
-        method: 'POST',
-        headers: {
-            'Authorization': 'Bearer ' + liff.getAccessToken()
-        },
-        body: formData
-    };
-    
     try {
-        const response = await fetch(url, options);
+        const formData = new FormData();
+        formData.append('file', file);
         
-        if (!response.ok) {
-            throw new Error('File upload failed with status ' + response.status);
+        // เพิ่มข้อมูลอื่นๆ ลงใน FormData
+        for (const key in additionalData) {
+            formData.append(key, additionalData[key]);
         }
         
-        return await response.json();
+        // ดึง token จาก LIFF ถ้ามี
+        let headers = {};
+        if (liff && liff.isLoggedIn()) {
+            try {
+                const token = liff.getAccessToken();
+                if (token) {
+                    headers['Authorization'] = 'Bearer ' + token;
+                }
+            } catch (error) {
+                console.warn('Could not get LIFF token:', error);
+            }
+        }
+        
+        // แสดงข้อมูลที่จะส่ง (สำหรับการ debug)
+        console.log('Sending data to:', API_BASE_URL + endpoint);
+        console.log('Headers:', headers);
+        console.log('Form data keys:', Object.keys(additionalData));
+        
+        const response = await fetch(API_BASE_URL + endpoint, {
+            method: 'POST',
+            headers: headers,
+            body: formData
+        });
+        
+        // อ่านข้อความตอบกลับก่อน
+        const responseText = await response.text();
+        console.log('Response text:', responseText);
+        
+        if (!response.ok) {
+            throw new Error('Upload failed with status ' + response.status + ': ' + responseText);
+        }
+        
+        // แปลงเป็น JSON ถ้าเป็นไปได้
+        try {
+            return JSON.parse(responseText);
+        } catch (e) {
+            return { success: true, message: responseText };
+        }
     } catch (error) {
-        console.error('File upload error:', error);
+        console.error('Upload error:', error);
         throw error;
     }
 }
