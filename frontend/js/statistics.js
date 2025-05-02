@@ -201,6 +201,9 @@ function renderProgressChart(runData) {
             return;
         }
         
+        // กำหนดความสูงของกราฟให้พอดี
+        chartElement.height = 200;
+        
         // ตรวจสอบข้อมูลให้ถูกต้อง
         const validData = runData.filter(run => run.rundate && run.distance !== undefined);
         console.log("Valid data for chart:", validData);
@@ -213,15 +216,23 @@ function renderProgressChart(runData) {
         // เรียงลำดับข้อมูลตามวันที่
         validData.sort((a, b) => new Date(a.rundate) - new Date(b.rundate));
         
+        // แสดงเฉพาะข้อมูล 10 รายการล่าสุด ถ้ามีมากกว่า 10 รายการ
+        const limitedData = validData.length > 10 ? validData.slice(-10) : validData;
+        
         // สร้างข้อมูลสำหรับกราฟในรูปแบบที่ไม่ใช้ time scale
-        const labels = validData.map(run => {
+        const labels = limitedData.map(run => {
             const date = new Date(run.rundate);
             return date.toLocaleDateString('th-TH', { day: '2-digit', month: 'short' });
         });
         
         // คำนวณค่าสะสม
         let cumulativeDistance = 0;
-        const data = validData.map(run => {
+        // หาค่าสะสมก่อนหน้าข้อมูลที่แสดง (ถ้ามีการจำกัดข้อมูล)
+        if (validData.length > 10) {
+            cumulativeDistance = validData.slice(0, validData.length - 10).reduce((sum, run) => sum + parseFloat(run.distance), 0);
+        }
+        
+        const data = limitedData.map(run => {
             cumulativeDistance += parseFloat(run.distance);
             return cumulativeDistance;
         });
@@ -251,6 +262,10 @@ function renderProgressChart(runData) {
                         title: {
                             display: true,
                             text: 'วันที่'
+                        },
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45
                         }
                     },
                     y: {
@@ -259,6 +274,11 @@ function renderProgressChart(runData) {
                             text: 'ระยะทางสะสม (กม.)'
                         },
                         min: 0
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false // ซ่อนคำอธิบาย (legend) เพื่อประหยัดพื้นที่
                     }
                 }
             }
