@@ -1,16 +1,24 @@
 // backend/server.js
-// ไฟล์หลักสำหรับ Express Server
+// ไฟล์หลักสำหรับ Express Server ที่รองรับ HTTPS
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const fileUpload = require('express-fileupload');
 const path = require('path');
+const https = require('https');  // เพิ่มโมดูล HTTPS
+const fs = require('fs');  // เพิ่มโมดูล fs สำหรับอ่านไฟล์ certificate
 
 const userRoutes = require('./routes/users');
 const runRoutes = require('./routes/runs');
 
 const app = express();
 const PORT = process.env.PORT || 4900;
+
+// ค่า SSL options
+const sslOptions = {
+    key: fs.readFileSync('/path/to/privkey.pem'),  // เปลี่ยนเป็นเส้นทางจริงของไฟล์ private key
+    cert: fs.readFileSync('/path/to/fullchain.pem')  // เปลี่ยนเป็นเส้นทางจริงของไฟล์ certificate
+};
 
 // ミドルウェアの設定
 app.use(cors());
@@ -30,7 +38,10 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/api/users', userRoutes);
 app.use('/api/runs', runRoutes);
 
-// サーバー起動
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+// สร้าง HTTPS server
+const httpsServer = https.createServer(sslOptions, app);
+
+// เริ่มเซิร์ฟเวอร์ HTTPS
+httpsServer.listen(PORT, () => {
+    console.log(`HTTPS Server is running on port ${PORT}`);
 });
