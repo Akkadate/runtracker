@@ -54,33 +54,30 @@ function showProfileMode(profile, userData) {
 
 
 function showRegistrationForm(profile) {
-    // แสดงฟอร์ม
+    // 1. แสดงฟอร์มเช่นเดิม
     document.getElementById('registrationForm').classList.remove('hidden');
     document.getElementById('profileContainer').classList.add('hidden');
     
-    // สร้างฟอร์มใหม่แบบง่ายๆ คล้ายกับไฟล์ HTML ที่ทดสอบสำเร็จ
+    // 2. สร้างฟอร์มใหม่ แต่ให้คงโครงสร้างเดิม
     const formContainer = document.getElementById('registrationForm');
     formContainer.innerHTML = `
-        <h2>กรอกข้อมูลส่วนตัว</h2>
-        <div class="form-group">
-            <label for="nationalid">เลขบัตรประชาชน:</label>
-            <input type="text" id="nationalid" maxlength="13" required>
-        </div>
-        <div class="form-group">
-            <label for="phonenumber">เบอร์โทรศัพท์:</label>
-            <input type="tel" id="phonenumber" maxlength="10" required>
-        </div>
-        <button id="submitBtn" class="btn-primary">บันทึกข้อมูล</button>
-        <div id="statusMessage"></div>
+        <form id="userForm">
+            <div class="form-group">
+                <label for="nationalid">เลขบัตรประชาชน:</label>
+                <input type="text" id="nationalid" maxlength="13" required>
+            </div>
+            <div class="form-group">
+                <label for="phonenumber">เบอร์โทรศัพท์:</label>
+                <input type="tel" id="phonenumber" maxlength="10" required>
+            </div>
+            <button type="button" id="submitBtn" class="btn-primary">บันทึกข้อมูล</button>
+            <div id="statusMessage"></div>
+        </form>
     `;
     
-    // ใช้ onclick แทน addEventListener
+    // 3. ใช้ onclick แทน addEventListener
     document.getElementById('submitBtn').onclick = async function() {
-        const statusMessage = document.getElementById('statusMessage');
-        statusMessage.innerHTML = "กำลังส่งข้อมูล...";
-        
         try {
-            // ดึงข้อมูลจากฟอร์ม
             const nationalid = document.getElementById('nationalid').value;
             const phonenumber = document.getElementById('phonenumber').value;
             
@@ -88,28 +85,27 @@ function showRegistrationForm(profile) {
             
             // ตรวจสอบข้อมูล
             if (nationalid.length !== 13 || !/^\d+$/.test(nationalid)) {
-                statusMessage.innerHTML = "กรุณากรอกเลขบัตรประชาชน 13 หลัก";
+                alert('กรุณากรอกเลขบัตรประชาชน 13 หลัก');
                 return;
             }
             
             if (phonenumber.length !== 10 || !/^\d+$/.test(phonenumber)) {
-                statusMessage.innerHTML = "กรุณากรอกเบอร์โทรศัพท์ 10 หลัก";
+                alert('กรุณากรอกเบอร์โทรศัพท์ 10 หลัก');
                 return;
             }
             
-            // แสดงข้อมูลที่จะส่ง
+            // สร้างข้อมูลที่จะส่ง
             const userData = {
                 userid: profile.userId,
                 displayname: profile.displayName,
-                pictureurl: profile.pictureUrl,
+                pictureurl: profile.pictureUrl || '',
                 nationalid: nationalid,
                 phonenumber: phonenumber
             };
             
             console.log('ข้อมูลที่จะส่ง:', userData);
-            statusMessage.innerHTML = "กำลังส่งข้อมูล...";
             
-            // ส่งข้อมูลโดยตรงไม่ผ่าน apiRequest
+            // 4. ส่งข้อมูลโดยตรงไม่ผ่าน apiRequest
             const response = await fetch('https://runtracker.devapp.cc/api/users', {
                 method: 'POST',
                 headers: {
@@ -120,22 +116,18 @@ function showRegistrationForm(profile) {
             
             console.log('สถานะการตอบกลับ:', response.status);
             
-            // รับผลลัพธ์
             const result = await response.json();
             console.log('ผลลัพธ์ API:', result);
             
-            // แสดงข้อความสำเร็จ
-            statusMessage.innerHTML = "ลงทะเบียนเรียบร้อยแล้ว";
+            // 5. แสดงผลสำเร็จ
             alert('ลงทะเบียนเรียบร้อยแล้ว');
             
-            // แสดงหน้าโปรไฟล์
+            // 6. แสดงหน้าโปรไฟล์
             showProfileMode(profile, userData);
         } catch (error) {
             console.error('เกิดข้อผิดพลาด:', error);
-            statusMessage.innerHTML = "เกิดข้อผิดพลาด: " + error.message;
+            alert('เกิดข้อผิดพลาดในการลงทะเบียน: ' + error.message);
         }
-        
-        return false; // ป้องกันการส่งฟอร์มตามปกติ
     };
 }
 
