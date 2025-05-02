@@ -14,17 +14,29 @@
             <h1>ลงทะเบียน / โปรไฟล์</h1>
         </div>
         
+        <!-- ส่วนแสดงโปรไฟล์ -->
         <div id="profileContainer" class="profile-container hidden">
             <img id="profileImage" src="" alt="Profile Image">
             <h2 id="displayName">ชื่อผู้ใช้</h2>
             <div class="profile-details">
-                <p>เลขบัตรประชาชน: <span id="nationalid">-</span></p>
-                <p>เบอร์โทรศัพท์: <span id="phonenumber">-</span></p>
+                <p>เลขบัตรประชาชน: <span id="profile-nationalid">-</span></p>
+                <p>เบอร์โทรศัพท์: <span id="profile-phonenumber">-</span></p>
             </div>
         </div>
         
+        <!-- ส่วนฟอร์มลงทะเบียน - กำหนดไว้เลย -->
         <div id="registrationForm" class="form-container">
-            <!-- ส่วนนี้จะถูกเติมโดย JavaScript -->
+            <h2>กรอกข้อมูลส่วนตัว</h2>
+            <div class="form-group">
+                <label for="form-nationalid">เลขบัตรประชาชน:</label>
+                <input type="text" id="form-nationalid" maxlength="13" required>
+            </div>
+            <div class="form-group">
+                <label for="form-phonenumber">เบอร์โทรศัพท์:</label>
+                <input type="tel" id="form-phonenumber" maxlength="10" required>
+            </div>
+            <button type="button" id="submitBtn" class="btn-primary">บันทึกข้อมูล</button>
+            <div id="statusMessage"></div>
         </div>
         
         <div class="footer">

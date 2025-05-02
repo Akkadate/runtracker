@@ -1,141 +1,145 @@
-// ตรวจสอบการโหลดไฟล์
+// แสดง debug log
 console.log('register.js loaded');
 
-// ตรวจสอบสถานะของ LIFF
-window.addEventListener('load', function() {
-    console.log('Window loaded');
-    console.log('LIFF status:', {
-        isDefined: typeof liff !== 'undefined',
-        isInClient: liff?.isInClient?.() || false,
-        isLoggedIn: liff?.isLoggedIn?.() || false
+// ตรวจสอบเมื่อหน้าโหลดเสร็จ
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM Content Loaded');
+    
+    // ตรวจสอบ LIFF
+    if (typeof liff === 'undefined') {
+        console.error('LIFF SDK not found');
+        document.getElementById('statusMessage').textContent = 'ไม่พบ LIFF SDK กรุณาลองใหม่อีกครั้ง';
+        return;
+    }
+    
+    console.log('LIFF SDK Found');
+    
+    // เริ่มต้นใช้งาน LIFF
+    liff.ready.then(() => {
+        console.log('LIFF is ready');
+        
+        if (!liff.isLoggedIn()) {
+            console.log('User not logged in, redirecting to login');
+            liff.login();
+            return;
+        }
+        
+        console.log('User is logged in, initializing app');
+        initializeApp();
+    }).catch(err => {
+        console.error('LIFF initialization error', err);
+        document.getElementById('statusMessage').textContent = 'ไม่สามารถเชื่อมต่อกับ LINE ได้';
     });
 });
 
-// รวมเหลือเพียง listener เดียว
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOM loaded');
-    
-    // ทดสอบ LIFF
-    if (typeof liff !== 'undefined') {
-        console.log('LIFF is defined');
-        console.log('LIFF version:', liff.getVersion());
-        console.log('LIFF is logged in:', liff.isLoggedIn());
-        console.log('LIFF is in client:', liff.isInClient());
-        
-        // เริ่มต้นการทำงานเมื่อ LIFF พร้อม
-        if (liff.isLoggedIn()) {
-            initializeRegisterPage();
-        } else {
-            // หากยังไม่ได้ล็อกอิน ให้เข้าสู่ระบบก่อน
-            liff.login();
-        }
-    } else {
-        console.error('LIFF is not defined!');
-        alert('ไม่สามารถเชื่อมต่อกับ LINE ได้ กรุณาลองใหม่อีกครั้ง');
-    }
-});
-
-async function initializeRegisterPage() {
+// ฟังก์ชันเริ่มต้นแอป
+async function initializeApp() {
     try {
-        // ดึงข้อมูลโปรไฟล์ผู้ใช้
+        // ดึงข้อมูลโปรไฟล์
+        console.log('Getting user profile');
         const profile = await liff.getProfile();
-        console.log('ได้รับข้อมูลโปรไฟล์:', profile);
+        console.log('User profile:', profile);
         
-        // ตรวจสอบว่ามีข้อมูลผู้ใช้อยู่แล้วหรือไม่
+        // ตรวจสอบข้อมูลผู้ใช้
         try {
+            console.log('Checking if user exists');
             const response = await fetch('https://runtracker.devapp.cc/api/users/' + profile.userId);
+            console.log('User check response:', response.status);
             
             if (response.ok) {
                 const userData = await response.json();
-                console.log('พบข้อมูลผู้ใช้:', userData);
+                console.log('User data found:', userData);
                 showProfileMode(profile, userData);
             } else {
-                console.log('ไม่พบข้อมูลผู้ใช้ แสดงฟอร์มลงทะเบียน');
+                console.log('User not found, showing registration form');
                 showRegistrationForm(profile);
             }
         } catch (error) {
-            console.error('ไม่สามารถตรวจสอบข้อมูลผู้ใช้:', error);
+            console.error('Error checking user:', error);
             showRegistrationForm(profile);
         }
+        
+        // เพิ่ม event listener สำหรับปุ่มส่ง
+        setupSubmitButton(profile);
     } catch (error) {
-        console.error('เกิดข้อผิดพลาดในการเริ่มต้น:', error);
-        alert('เกิดข้อผิดพลาดในการเชื่อมต่อกับ LINE: ' + error.message);
+        console.error('App initialization error:', error);
+        document.getElementById('statusMessage').textContent = 'เกิดข้อผิดพลาดในการเริ่มต้นแอป: ' + error.message;
     }
 }
 
+// แสดงโปรไฟล์
 function showProfileMode(profile, userData) {
-    // แสดงข้อมูลโปรไฟล์
-    const profileImage = document.getElementById('profileImage');
-    if (profileImage && profile.pictureUrl) {
-        profileImage.src = profile.pictureUrl;
+    console.log('Showing profile mode');
+    
+    // อัปเดตข้อมูลโปรไฟล์
+    if (profile.pictureUrl) {
+        document.getElementById('profileImage').src = profile.pictureUrl;
     }
-    
     document.getElementById('displayName').textContent = profile.displayName;
-    document.getElementById('nationalid').textContent = userData.nationalid;
-    document.getElementById('phonenumber').textContent = userData.phonenumber;
+    document.getElementById('profile-nationalid').textContent = userData.nationalid;
+    document.getElementById('profile-phonenumber').textContent = userData.phonenumber;
     
-    // แสดงโปรไฟล์
+    // แสดง/ซ่อนส่วนต่างๆ
     document.getElementById('profileContainer').classList.remove('hidden');
     document.getElementById('registrationForm').classList.add('hidden');
 }
 
+// แสดงฟอร์มลงทะเบียน
 function showRegistrationForm(profile) {
-    // แสดงฟอร์ม
+    console.log('Showing registration form');
+    
+    // แสดง/ซ่อนส่วนต่างๆ
     document.getElementById('registrationForm').classList.remove('hidden');
     document.getElementById('profileContainer').classList.add('hidden');
     
-    // สร้างฟอร์ม
-    const formContainer = document.getElementById('registrationForm');
-    formContainer.innerHTML = `
-        <h2>กรอกข้อมูลส่วนตัว</h2>
-        <div class="form-group">
-            <label for="nationalid">เลขบัตรประชาชน:</label>
-            <input type="text" id="nationalid" maxlength="13" required>
-        </div>
-        <div class="form-group">
-            <label for="phonenumber">เบอร์โทรศัพท์:</label>
-            <input type="tel" id="phonenumber" maxlength="10" required>
-        </div>
-        <button type="button" id="submitBtn" class="btn-primary">บันทึกข้อมูล</button>
-        <div id="statusMessage"></div>
-    `;
-    
-    // เพิ่มการตรวจสอบว่า element มีอยู่จริงหรือไม่
+    // ล้างค่าฟอร์ม
+    document.getElementById('form-nationalid').value = '';
+    document.getElementById('form-phonenumber').value = '';
+    document.getElementById('statusMessage').textContent = '';
+}
+
+// ตั้งค่าปุ่มส่งฟอร์ม
+function setupSubmitButton(profile) {
     const submitBtn = document.getElementById('submitBtn');
+    
     if (!submitBtn) {
-        console.error('ไม่พบปุ่ม submitBtn!');
+        console.error('Submit button not found');
         return;
     }
     
-    // กำหนด event handler
+    console.log('Setting up submit button');
+    
     submitBtn.onclick = async function() {
         try {
-            // ตรวจสอบว่า element มีอยู่จริงหรือไม่
-            const nationalidElement = document.getElementById('nationalid');
-            const phonenumberElement = document.getElementById('phonenumber');
+            console.log('Submit button clicked');
+            document.getElementById('statusMessage').textContent = 'กำลังส่งข้อมูล...';
+            
+            // ดึงข้อมูลจากฟอร์ม
+            const nationalidElement = document.getElementById('form-nationalid');
+            const phonenumberElement = document.getElementById('form-phonenumber');
+            
+            console.log('Input elements:', {
+                nationalidElement: nationalidElement ? 'found' : 'not found',
+                phonenumberElement: phonenumberElement ? 'found' : 'not found'
+            });
             
             if (!nationalidElement || !phonenumberElement) {
-                console.error('ไม่พบช่องกรอกข้อมูล!', {
-                    nationalidElement,
-                    phonenumberElement
-                });
-                alert('เกิดข้อผิดพลาด: ไม่พบช่องกรอกข้อมูล');
-                return;
+                throw new Error('ไม่พบช่องกรอกข้อมูล');
             }
             
             const nationalid = nationalidElement.value;
             const phonenumber = phonenumberElement.value;
             
-            console.log('ข้อมูลที่กรอก:', { nationalid, phonenumber });
+            console.log('Form data:', { nationalid, phonenumber });
             
             // ตรวจสอบข้อมูล
             if (!nationalid || nationalid.length !== 13 || !/^\d+$/.test(nationalid)) {
-                alert('กรุณากรอกเลขบัตรประชาชน 13 หลัก');
+                document.getElementById('statusMessage').textContent = 'กรุณากรอกเลขบัตรประชาชน 13 หลัก';
                 return;
             }
             
             if (!phonenumber || phonenumber.length !== 10 || !/^\d+$/.test(phonenumber)) {
-                alert('กรุณากรอกเบอร์โทรศัพท์ 10 หลัก');
+                document.getElementById('statusMessage').textContent = 'กรุณากรอกเบอร์โทรศัพท์ 10 หลัก';
                 return;
             }
             
@@ -148,7 +152,7 @@ function showRegistrationForm(profile) {
                 phonenumber: phonenumber
             };
             
-            console.log('ข้อมูลที่จะส่ง:', userData);
+            console.log('Sending user data:', userData);
             
             // ส่งข้อมูล
             const response = await fetch('https://runtracker.devapp.cc/api/users', {
@@ -159,19 +163,20 @@ function showRegistrationForm(profile) {
                 body: JSON.stringify(userData)
             });
             
-            console.log('สถานะการตอบกลับ:', response.status);
+            console.log('API response status:', response.status);
             
             const result = await response.json();
-            console.log('ผลลัพธ์ API:', result);
+            console.log('API response data:', result);
             
             // แสดงผลสำเร็จ
+            document.getElementById('statusMessage').textContent = 'ลงทะเบียนเรียบร้อยแล้ว';
             alert('ลงทะเบียนเรียบร้อยแล้ว');
             
             // แสดงหน้าโปรไฟล์
             showProfileMode(profile, userData);
         } catch (error) {
-            console.error('เกิดข้อผิดพลาด:', error);
-            alert('เกิดข้อผิดพลาดในการลงทะเบียน: ' + error.message);
+            console.error('Registration error:', error);
+            document.getElementById('statusMessage').textContent = 'เกิดข้อผิดพลาด: ' + error.message;
         }
     };
 }
