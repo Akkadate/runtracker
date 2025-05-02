@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test API</title>
+</head>
+<body>
+    <h1>ทดสอบการส่งข้อมูล</h1>
+    <input type="text" id="userid" placeholder="User ID" value="testuser123">
+    <input type="text" id="displayname" placeholder="Display Name" value="Test User">
+    <input type="text" id="pictureurl" placeholder="Picture URL" value="https://example.com/image.jpg">
+    <input type="text" id="nationalid" placeholder="National ID" value="1234567890123">
+    <input type="text" id="phonenumber" placeholder="Phone Number" value="0812345678">
+    <button id="sendButton">ส่งข้อมูล</button>
+    
+    <pre id="result"></pre>
+    
+    <script>
+        document.getElementById('sendButton').addEventListener('click', async function() {
+            try {
+                const userData = {
+                    userid: document.getElementById('userid').value,
+                    displayname: document.getElementById('displayname').value,
+                    pictureurl: document.getElementById('pictureurl').value,
+                    nationalid: document.getElementById('nationalid').value,
+                    phonenumber: document.getElementById('phonenumber').value
+                };
+                
+                document.getElementById('result').textContent = 'Sending data: ' + JSON.stringify(userData, null, 2);
+                
+                const response = await fetch('https://runtracker.devapp.cc/api/users', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(userData)
+                });
+                
+                const result = await response.json();
+                document.getElementById('result').textContent += '\n\nResult: ' + JSON.stringify(result, null, 2);
+                
+                alert('Success!');
+            } catch (error) {
+                document.getElementById('result').textContent += '\n\nError: ' + error.message;
+                alert('Error: ' + error.message);
+            }
+        });
+    </script>
+</body>
+</html>
