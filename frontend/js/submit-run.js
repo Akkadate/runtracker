@@ -53,39 +53,78 @@ async function initializeSubmitRunPage() {
         });
         
         // フォーム送信イベントの設定
-        document.getElementById('submitRunForm').addEventListener('submit', async (event) => {
-            event.preventDefault();
+       // แก้ไขส่วนการส่งฟอร์ม
+document.getElementById('submitRunForm').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    
+    const rundate = document.getElementById('rundate').value;
+    const distance = document.getElementById('distance').value;
+    const duration = document.getElementById('duration').value;
+    const proofImage = document.getElementById('proofImage').files[0];
+    
+    console.log('Form data:', {
+        rundate,
+        distance,
+        duration,
+        proofImage: proofImage ? proofImage.name : 'No file selected'
+    });
+    
+    if (!proofImage) {
+        alert('กรุณาอัปโหลดภาพหลักฐาน');
+        return;
+    }
+    
+    try {
+        // ล็อคปุ่มส่ง
+        const submitButton = document.getElementById('submitRunForm').querySelector('button');
+        submitButton.textContent = 'กำลังบันทึก...';
+        submitButton.disabled = true;
+        
+        // ข้อมูลเพิ่มเติม
+        const additionalData = {
+            userid: (await liff.getProfile()).userId,
+            rundate: rundate,
+            distance: distance,
+            duration: duration
+        };
+        
+        console.log('Sending data to API...');
+        
+        // ใช้ debugUpload เพื่อตรวจสอบการส่งข้อมูล
+        try {
+            const debugResult = await debugUpload(proofImage, additionalData);
+            console.log('Debug upload result:', debugResult);
             
-            const rundate = document.getElementById('rundate').value;
-            const distance = document.getElementById('distance').value;
-            const duration = document.getElementById('duration').value;
-            const proofImage = document.getElementById('proofImage').files[0];
+            // ถ้าสำเร็จ ให้ใช้ผลลัพธ์จาก debug
+            const result = debugResult;
             
-            if (!proofImage) {
-                alert('กรุณาอัปโหลดภาพหลักฐาน');
-                return;
-            }
+            // แสดงข้อความสำเร็จ
+            document.getElementById('runForm').classList.add('hidden');
+            document.getElementById('successMessage').classList.remove('hidden');
             
-            try {
-                // ロード中表示
-                document.getElementById('submitRunForm').querySelector('button').textContent = 'กำลังบันทึก...';
-                document.getElementById('submitRunForm').querySelector('button').disabled = true;
-                
-                // ファイルをアップロード
-                const additionalData = {
-                    userid: profile.userId,
-                    rundate: rundate,
-                    distance: distance,
-                    duration: duration
-                };
-                
+            // บันทึกข้อมูลปัจจุบันสำหรับการแชร์
+            currentRunData = {
+                rundate: rundate,
+                distance: distance,
+                duration: duration,
+                imageurl: result.imageurl || 'https://example.com/placeholder.jpg' // ใส่ URL สำรองหากไม่มี
+            };
+            
+            // ตั้งค่า event listener สำหรับปุ่มแชร์
+            document.getElementById('shareButton').addEventListener('click', shareRunResult);
+        } catch (debugError) {
+            // ถ้า debug ไม่สำเร็จ ให้แสดงข้อความผิดพลาด
+            console.error('Debug upload failed:', debugError);
+            
+            // ลองใช้ uploadFile ตามปกติหากมีการกำหนดไว้แล้ว
+            if (typeof uploadFile === 'function') {
                 const result = await uploadFile('/api/runs/upload', proofImage, additionalData);
                 
-                // 成功メッセージを表示
+                // แสดงข้อความสำเร็จ
                 document.getElementById('runForm').classList.add('hidden');
                 document.getElementById('successMessage').classList.remove('hidden');
                 
-                // 現在のランデータを保存（共有用）
+                // บันทึกข้อมูลปัจจุบัน
                 currentRunData = {
                     rundate: rundate,
                     distance: distance,
@@ -93,29 +132,34 @@ async function initializeSubmitRunPage() {
                     imageurl: result.imageurl
                 };
                 
-                // 共有ボタンのイベントリスナーを設定
+                // ตั้งค่า event listener สำหรับปุ่มแชร์
                 document.getElementById('shareButton').addEventListener('click', shareRunResult);
-                
-            } catch (error) {
-                console.error('Error submitting run data:', error);
-                alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่อีกครั้ง');
-                
-                // ボタンを元に戻す
-                document.getElementById('submitRunForm').querySelector('button').textContent = 'บันทึกข้อมูล';
-                document.getElementById('submitRunForm').querySelector('button').disabled = false;
+            } else {
+                throw new Error('ฟังก์ชัน uploadFile ไม่ได้ถูกกำหนด');
             }
-        });
-    }catch (error) {
+        }
+    } catch (error) {
+        console.error('Error submitting run data:', error);
+        alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล: ' + error.message);
+        
+        // คืนค่าปุ่มส่ง
+        const submitButton = document.getElementById('submitRunForm').querySelector('button');
+        submitButton.textContent = 'บันทึกข้อมูล';
+        submitButton.disabled = false;
+    }
+});
+
+        }catch (error) {
         console.error('Error initializing submit run page:', error);
         alert('เกิดข้อผิดพลาดในการโหลดหน้า กรุณาลองใหม่อีกครั้ง');
     }
 }
 
-// 走行結果を共有する関数
 function shareRunResult() {
     if (!currentRunData) return;
     
-    const runDate = new Date(currentRunData.runDate).toLocaleDateString('th-TH', {
+    // แก้ไขให้ใช้ชื่อตัวแปรที่ตรงกัน
+    const runDate = new Date(currentRunData.rundate).toLocaleDateString('th-TH', {
         year: 'numeric',
         month: 'long',
         day: 'numeric'
@@ -132,8 +176,8 @@ function shareRunResult() {
             },
             {
                 type: "image",
-                originalContentUrl: currentRunData.imageUrl,
-                previewImageUrl: currentRunData.imageUrl
+                originalContentUrl: currentRunData.imageurl, // แก้ไขเป็น imageurl
+                previewImageUrl: currentRunData.imageurl    // แก้ไขเป็น imageurl
             }
         ])
         .then(function(res) {
@@ -150,7 +194,47 @@ function shareRunResult() {
         });
     } else {
         // ShareTargetPickerが利用できない場合
-        sendLineMessage(message);
-        alert('แชร์ข้อความเรียบร้อยแล้ว');
+        alert('ไม่สามารถแชร์ข้อมูลได้ เนื่องจากไม่รองรับฟังก์ชันนี้');
+    }
+}
+
+// ฟังก์ชันสำหรับตรวจสอบการส่งข้อมูล
+async function debugUpload(file, additionalData) {
+    try {
+        console.log('Debug: Preparing to upload file');
+        console.log('File data:', {
+            name: file.name,
+            type: file.type,
+            size: file.size
+        });
+        console.log('Additional data:', additionalData);
+        
+        // ทดสอบส่งข้อมูลโดยตรง
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        for (const key in additionalData) {
+            formData.append(key, additionalData[key]);
+        }
+        
+        console.log('FormData created, attempting to send...');
+        
+        const response = await fetch(API_BASE_URL + '/api/runs/upload', {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + liff.getAccessToken()
+            },
+            body: formData
+        });
+        
+        console.log('Upload response status:', response.status);
+        
+        const result = await response.json();
+        console.log('Upload response data:', result);
+        
+        return result;
+    } catch (error) {
+        console.error('Debug upload error:', error);
+        throw error;
     }
 }
