@@ -65,7 +65,7 @@ async function loadUserStats(userId, client) {
         const { data, error } = await client
             .from('runner_rankings')
             .select('*')
-            .eq('userId', userId)
+            .eq('userid', userId)
             .single();
         
         if (error && error.code !== 'PGRST116') {
@@ -93,8 +93,8 @@ async function loadUserStats(userId, client) {
         console.log("Loading run data for progress chart...");
         const { data: runData, error: runError } = await client
             .from('runs')
-            .select('runDate,distance')
-            .eq('userId', userId)
+            .select('rundate,distance')
+            .eq('userid', userId)
             .order('runDate', { ascending: true });
         
         if (runError) {
