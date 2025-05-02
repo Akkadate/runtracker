@@ -16,6 +16,21 @@ document.addEventListener('DOMContentLoaded', () => {
     // Check if LIFF is initialized and user is logged in
     if (liff.isLoggedIn()) {
         initializeStatisticsPage();
+        
+// ตรวจสอบโครงสร้างของตาราง
+console.log("Checking database structure...");
+client.from('runner_rankings').select().limit(1).then(({ data }) => {
+    if (data && data.length > 0) {
+        console.log("runner_rankings column structure:", Object.keys(data[0]));
+    }
+});
+
+client.from('runs').select().limit(1).then(({ data }) => {
+    if (data && data.length > 0) {
+        console.log("runs column structure:", Object.keys(data[0]));
+    }
+});
+        
     } else {
         // Redirect to login or show login message
         showError("กรุณาเข้าสู่ระบบก่อนใช้งาน");
