@@ -225,29 +225,32 @@ function renderProgressChart(runData) {
             return date.toLocaleDateString('th-TH', { day: '2-digit', month: 'short' });
         });
         
-        // คำนวณค่าสะสม
+       const chartData = [];
         let cumulativeDistance = 0;
-        // หาค่าสะสมก่อนหน้าข้อมูลที่แสดง (ถ้ามีการจำกัดข้อมูล)
-        if (validData.length > 10) {
-            cumulativeDistance = validData.slice(0, validData.length - 10).reduce((sum, run) => sum + parseFloat(run.distance), 0);
+        
+        for (const run of validData) {
+            try {
+                const date = new Date(run.rundate);
+                const distance = parseFloat(run.distance);
+                
+                if (!isNaN(distance) && date instanceof Date && !isNaN(date)) {
+                    cumulativeDistance += distance;
+                    chartData.push({
+                        x: date,
+                        y: cumulativeDistance
+                    });
+                }
+            } catch (err) {
+                console.warn("Error processing run data item:", run, err);
+            }
         }
         
-        const data = limitedData.map(run => {
-            cumulativeDistance += parseFloat(run.distance);
-            return cumulativeDistance;
-        });
-        
-        console.log("Chart data prepared:", { labels, data });
-        
-        // สร้างกราฟแบบไม่ใช้ time scale
-        console.log("Creating chart without time scale...");
         const chart = new Chart(chartElement.getContext('2d'), {
             type: 'line',
             data: {
-                labels: labels,
                 datasets: [{
                     label: 'ระยะทางสะสม (กม.)',
-                    data: data,
+                    data: chartData,
                     borderColor: '#06c755',
                     backgroundColor: 'rgba(6, 199, 85, 0.1)',
                     fill: true,
@@ -259,32 +262,31 @@ function renderProgressChart(runData) {
                 maintainAspectRatio: false,
                 scales: {
                     x: {
-                        title: {
-                            display: true,
-                            text: 'วันที่'
+                        type: 'time',
+                        time: {
+                            unit: 'day',
+                            displayFormats: {
+                                day: 'd MMM'
+                            }
                         },
-                        ticks: {
-                            maxRotation: 45,
-                            minRotation: 45
+                        title: {
+                            display: false
                         }
                     },
                     y: {
                         title: {
-                            display: true,
-                            text: 'ระยะทางสะสม (กม.)'
+                            display: false
                         },
                         min: 0
                     }
                 },
                 plugins: {
                     legend: {
-                        display: false // ซ่อนคำอธิบาย (legend) เพื่อประหยัดพื้นที่
+                        display: false
                     }
                 }
             }
         });
-        
-        console.log("Chart created successfully");
     } catch (error) {
         console.error("Error rendering chart:", error);
     }
