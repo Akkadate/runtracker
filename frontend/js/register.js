@@ -13,6 +13,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+
+
+
 async function initializeRegisterPage() {
     try {
         // ユーザープロファイルの取得
@@ -61,6 +64,17 @@ function showRegistrationForm(profile) {
         
         const nationalid = document.getElementById('nationalid').value;
         const phonnumber = document.getElementById('phonenumber').value;
+
+        console.log('Form submitted with data:', { nationalId, phoneNumber });
+
+         // ทดสอบเรียก API โดยตรงเพื่อดูผลลัพธ์
+            try {
+                const response = await fetch('https://runtracker.devapp.cc/api/users/ping');
+                const pingData = await response.json();
+                console.log('Ping API response:', pingData);
+            } catch (e) {
+                console.error('Error calling ping API:', e);
+            }
         
         // 入力検証
         if (nationalid.length !== 13 || !/^\d+$/.test(nationalid)) {
