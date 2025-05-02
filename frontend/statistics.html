@@ -9,7 +9,11 @@
     
     <!-- Add Supabase JS library before all other scripts -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-    
+
+    <!-- เพิ่ม date adapter ก่อนโหลด Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/luxon@3.3.0/build/global/luxon.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.3.1/dist/chartjs-adapter-luxon.min.js"></script>
+        
     <!-- Chart.js must be included before statistics.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
