@@ -59,16 +59,26 @@ function showRegistrationForm(profile) {
     // プロファイルコンテナを非表示
     document.getElementById('profileContainer').classList.add('hidden');
     
-    // フォーム送信イベントの設定
-    document.getElementById('userForm').addEventListener('submit', async (event) => {
-        event.preventDefault(); // ป้องกันการส่งฟอร์มแบบปกติ
+    // ป้องกันการส่งฟอร์มแบบปกติโดยตรง
+    const form = document.getElementById('userForm');
+    
+    // ล้าง event listener เดิมที่อาจมีอยู่
+    const newForm = form.cloneNode(true);
+    form.parentNode.replaceChild(newForm, form);
+    
+    // เพิ่ม event listener ใหม่
+    newForm.addEventListener('submit', async function(event) {
+        // ป้องกันการส่งแบบ default (GET)
+        event.preventDefault();
+        
+        console.log("Form submit event triggered");
         
         const nationalid = document.getElementById('nationalid').value;
-        const phonenumber = document.getElementById('phonenumber').value; // แก้ไขการสะกดผิด phonnumber -> phonenumber
+        const phonenumber = document.getElementById('phonenumber').value;
         
-        console.log('Form submitted with data:', { nationalid, phonenumber }); // แก้ไขชื่อตัวแปรใน log ให้ตรงกัน
+        console.log("Form data:", { nationalid, phonenumber });
         
-        // 入力検証
+        // ตรวจสอบข้อมูล
         if (nationalid.length !== 13 || !/^\d+$/.test(nationalid)) {
             alert('กรุณากรอกเลขบัตรประชาชน 13 หลัก');
             return;
@@ -80,7 +90,7 @@ function showRegistrationForm(profile) {
         }
         
         try {
-            // ユーザーデータを登録
+            // สร้างข้อมูลที่จะส่ง
             const userData = {
                 userid: profile.userId,
                 displayname: profile.displayName,
@@ -89,18 +99,33 @@ function showRegistrationForm(profile) {
                 phonenumber: phonenumber
             };
             
-            console.log('Sending user data to API:', userData);
+            console.log("Sending data to API:", userData);
             
-            const result = await apiRequest('/api/users', 'POST', userData);
-            console.log('API response:', result);
+            // ส่งข้อมูลโดยตรง ไม่ผ่าน apiRequest
+            const response = await fetch('https://runtracker.devapp.cc/api/users', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + liff.getAccessToken()
+                },
+                body: JSON.stringify(userData)
+            });
             
-            // 登録成功後、プロファイル表示モードに切り替え
+            console.log("Response status:", response.status);
+            
+            const result = await response.json();
+            console.log("API response:", result);
+            
+            if (!response.ok) {
+                throw new Error("API error: " + JSON.stringify(result));
+            }
+            
+            // แสดงผลสำเร็จ
             showProfileMode(profile, userData);
-            
             alert('ลงทะเบียนเรียบร้อยแล้ว');
         } catch (error) {
-            console.error('Error registering user:', error);
-            alert('เกิดข้อผิดพลาดในการลงทะเบียน กรุณาลองใหม่อีกครั้ง');
+            console.error("Registration error:", error);
+            alert('เกิดข้อผิดพลาดในการลงทะเบียน: ' + error.message);
         }
     });
 }
