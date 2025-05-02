@@ -105,9 +105,6 @@ async function initializeSubmitRunPage() {
                 document.getElementById('submitRunForm').querySelector('button').disabled = false;
             }
         });
-    } catch (error) {
-        console.error('Error initializing submit run page:', error);
-        alert('เกิดข้อผิดพลาดในการโหลดหน้า กรุณาลองใหม่อีกครั้ง');
     }
 }
 
@@ -115,7 +112,7 @@ async function initializeSubmitRunPage() {
 function shareRunResult() {
     if (!currentRunData) return;
     
-    const runDate = new Date(currentRunData.rundate).toLocaleDateString('th-TH', {
+    const runDate = new Date(currentRunData.runDate).toLocaleDateString('th-TH', {
         year: 'numeric',
         month: 'long',
         day: 'numeric'
@@ -132,8 +129,8 @@ function shareRunResult() {
             },
             {
                 type: "image",
-                originalContentUrl: currentRunData.imageurl,
-                previewImageUrl: currentRunData.imageurl
+                originalContentUrl: currentRunData.imageUrl,
+                previewImageUrl: currentRunData.imageUrl
             }
         ])
         .then(function(res) {
@@ -150,12 +147,7 @@ function shareRunResult() {
         });
     } else {
         // ShareTargetPickerが利用できない場合
-        try {
-            sendLineMessage(message);
-            alert('แชร์ข้อความเรียบร้อยแล้ว');
-        } catch (error) {
-            console.error('Error sharing message:', error);
-            alert('เกิดข้อผิดพลาดในการแชร์ข้อมูล');
-        }
+        sendLineMessage(message);
+        alert('แชร์ข้อความเรียบร้อยแล้ว');
     }
 }
