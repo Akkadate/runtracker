@@ -1,10 +1,10 @@
-// js/statistics.js
+// js/statistics.js - Updated version to work with existing files
 document.addEventListener('DOMContentLoaded', () => {
-    // Initialize with LIFF
+    // Check if LIFF is initialized
     if (liff.isInClient() && liff.isLoggedIn()) {
         initializeStatisticsPage();
     } else {
-        // Check periodically
+        // Check periodically for LIFF initialization
         const checkLiffInterval = setInterval(() => {
             if (liff.isInClient() && liff.isLoggedIn()) {
                 clearInterval(checkLiffInterval);
@@ -19,38 +19,62 @@ let rankingData = null;
 
 async function initializeStatisticsPage() {
     try {
-        // Get user profile
+        // Show loading indicator if exists
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        if (loadingIndicator) loadingIndicator.classList.remove('hidden');
+        
+        // Hide other containers initially
+        const statsContainer = document.getElementById('statsContainer');
+        if (statsContainer) statsContainer.classList.add('hidden');
+        
+        const loginRequired = document.getElementById('loginRequired');
+        if (loginRequired) loginRequired.classList.add('hidden');
+
+        // Get user profile from LIFF
         const profile = await liff.getProfile();
         console.log("LINE profile loaded:", profile.userId);
         
-        // Create Supabase client
-        const supabase = createClient(
-            'https://jmmtbikvvuyzbhosplli.supabase.co',
-            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptbXRiaWt2dnV5emJob3NwbGxpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYxNTM0ODUsImV4cCI6MjA2MTcyOTQ4NX0.RLJApjPgsvowvEiS_rBCB7CTIPZd14NTcuCT3a3Wb5c'
-        );
+        // Initialize the Supabase client if not using api-client.js
+        if (typeof supabaseClient === 'undefined') {
+            console.log("Direct Supabase client not found, initializing...");
+            // Create direct client if api-client.js is not included
+            window.supabaseClient = supabase.createClient(
+                'https://jmmtbikvvuyzbhosplli.supabase.co',
+                'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptbXRiaWt2dnV5emJob3NwbGxpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYxNTM0ODUsImV4cCI6MjA2MTcyOTQ4NX0.RLJApjPgsvowvEiS_rBCB7CTIPZd14NTcuCT3a3Wb5c'
+            );
+        }
         
         // Get user data from Supabase
-        const { data: userData, error: userError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('userId', profile.userId)
-            .single();
+        let userData;
         
-        if (userError && userError.code !== 'PGRST116') {
-            console.error('Error fetching user data:', userError);
-            throw userError;
+        // Use userAPI if available, otherwise make direct query
+        if (typeof userAPI !== 'undefined') {
+            userData = await userAPI.getUserByLineId(profile.userId);
+        } else {
+            const { data, error } = await supabaseClient
+                .from('users')
+                .select('*')
+                .eq('userId', profile.userId)
+                .single();
+                
+            if (!error || error.code === 'PGRST116') {
+                userData = data;
+            } else {
+                console.error('Error fetching user data:', error);
+                throw error;
+            }
         }
         
         if (!userData) {
             // User not found, show login required message
-            document.getElementById('loginRequired').classList.remove('hidden');
-            document.getElementById('statsContainer').classList.add('hidden');
+            if (loadingIndicator) loadingIndicator.classList.add('hidden');
+            if (loginRequired) loginRequired.classList.remove('hidden');
             return;
         }
         
         // User found, proceed to show statistics
-        document.getElementById('loginRequired').classList.add('hidden');
-        document.getElementById('statsContainer').classList.remove('hidden');
+        if (loadingIndicator) loadingIndicator.classList.add('hidden');
+        if (statsContainer) statsContainer.classList.remove('hidden');
         
         // Load running stats for the user
         await loadUserStats(profile.userId);
@@ -62,7 +86,10 @@ async function initializeStatisticsPage() {
         renderProgressChart();
         
         // Set up share button
-        document.getElementById('shareStatsButton').addEventListener('click', shareStats);
+        const shareButton = document.getElementById('shareStatsButton');
+        if (shareButton) {
+            shareButton.addEventListener('click', shareStats);
+        }
     } catch (error) {
         console.error('Error initializing statistics page:', error);
         alert('เกิดข้อผิดพลาดในการโหลดข้อมูล กรุณาลองใหม่อีกครั้ง');
@@ -72,23 +99,27 @@ async function initializeStatisticsPage() {
 async function loadUserStats(userId) {
     try {
         // Get statistics from the runner_rankings view
-        const supabase = createClient(
-            'https://jmmtbikvvuyzbhosplli.supabase.co',
-            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptbXRiaWt2dnV5emJob3NwbGxpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYxNTM0ODUsImV4cCI6MjA2MTcyOTQ4NX0.RLJApjPgsvowvEiS_rBCB7CTIPZd14NTcuCT3a3Wb5c'
-        );
+        let stats;
         
-        const { data, error } = await supabase
-            .from('runner_rankings')
-            .select('*')
-            .eq('userId', userId)
-            .single();
-        
-        if (error) {
-            console.error('Error fetching user stats:', error);
-            throw error;
+        // Use runningAPI if available, otherwise make direct query
+        if (typeof runningAPI !== 'undefined') {
+            stats = await runningAPI.getUserStats(userId);
+        } else {
+            const { data, error } = await supabaseClient
+                .from('runner_rankings')
+                .select('*')
+                .eq('userId', userId)
+                .single();
+                
+            if (error && error.code !== 'PGRST116') {
+                console.error('Error fetching user stats:', error);
+                throw error;
+            }
+            
+            stats = data;
         }
         
-        if (!data) {
+        if (!stats) {
             // No stats found, create default empty stats
             userStats = {
                 totaldistance: 0,
@@ -97,32 +128,51 @@ async function loadUserStats(userId) {
             };
         } else {
             userStats = {
-                totaldistance: data.totaldistance || 0,
-                totalruns: data.totalruns || 0
+                totaldistance: stats.totaldistance || 0,
+                totalruns: stats.totalruns || 0
             };
             
             // Get run data for progress chart
-            const { data: runData, error: runError } = await supabase
-                .from('runs')
-                .select('runDate, distance')
-                .eq('userId', userId)
-                .order('runDate', { ascending: true });
+            let runData;
             
-            if (runError) {
-                console.error('Error fetching run data:', runError);
+            // Use runningAPI if available, otherwise make direct query
+            if (typeof runningAPI !== 'undefined') {
+                runData = await runningAPI.getUserRunningRecords(userId);
             } else {
-                userStats.progressData = runData || [];
+                const { data, error } = await supabaseClient
+                    .from('runs')
+                    .select('runDate, distance')
+                    .eq('userId', userId)
+                    .order('runDate', { ascending: true });
+                
+                if (error) {
+                    console.error('Error fetching run data:', error);
+                } else {
+                    runData = data;
+                }
             }
+            
+            userStats.progressData = runData || [];
         }
         
         // Update UI with user stats
-        document.getElementById('totaldistance').textContent = userStats.totaldistance.toFixed(2);
-        document.getElementById('totalruns').textContent = userStats.totalruns;
+        const totalDistanceElement = document.getElementById('totaldistance');
+        if (totalDistanceElement) {
+            totalDistanceElement.textContent = userStats.totaldistance.toFixed(2);
+        }
+        
+        const totalRunsElement = document.getElementById('totalruns');
+        if (totalRunsElement) {
+            totalRunsElement.textContent = userStats.totalruns;
+        }
         
         // Update rank if ranking data is available
         if (rankingData) {
             const userRank = rankingData.findIndex(item => item.userId === userId) + 1;
-            document.getElementById('currentRank').textContent = userRank > 0 ? userRank : '-';
+            const currentRankElement = document.getElementById('currentRank');
+            if (currentRankElement) {
+                currentRankElement.textContent = userRank > 0 ? userRank : '-';
+            }
         }
     } catch (error) {
         console.error('Error loading user stats:', error);
@@ -132,26 +182,32 @@ async function loadUserStats(userId) {
 
 async function loadRankingData() {
     try {
-        const supabase = createClient(
-            'https://jmmtbikvvuyzbhosplli.supabase.co',
-            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptbXRiaWt2dnV5emJob3NwbGxpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYxNTM0ODUsImV4cCI6MjA2MTcyOTQ4NX0.RLJApjPgsvowvEiS_rBCB7CTIPZd14NTcuCT3a3Wb5c'
-        );
+        // Get rankings data
+        let data;
         
-        // Get all rankings from runner_rankings view, sorted by distance
-        const { data, error } = await supabase
-            .from('runner_rankings')
-            .select('*')
-            .order('totaldistance', { ascending: false });
-        
-        if (error) {
-            console.error('Error fetching ranking data:', error);
-            throw error;
+        // Use runningAPI if available, otherwise make direct query
+        if (typeof runningAPI !== 'undefined') {
+            data = await runningAPI.getRankings();
+        } else {
+            const { data: rankingsData, error } = await supabaseClient
+                .from('runner_rankings')
+                .select('*')
+                .order('totaldistance', { ascending: false });
+            
+            if (error) {
+                console.error('Error fetching ranking data:', error);
+                throw error;
+            }
+            
+            data = rankingsData;
         }
         
         rankingData = data || [];
         
         // Generate ranking table
         const tableBody = document.getElementById('rankingTableBody');
+        if (!tableBody) return;
+        
         tableBody.innerHTML = '';
         
         rankingData.forEach((runner, index) => {
@@ -174,7 +230,10 @@ async function loadRankingData() {
         // Update user's current rank
         if (userStats) {
             const userRank = rankingData.findIndex(item => item.userId === liff.getContext().userId) + 1;
-            document.getElementById('currentRank').textContent = userRank > 0 ? userRank : '-';
+            const currentRankElement = document.getElementById('currentRank');
+            if (currentRankElement) {
+                currentRankElement.textContent = userRank > 0 ? userRank : '-';
+            }
         }
     } catch (error) {
         console.error('Error loading ranking data:', error);
@@ -187,7 +246,10 @@ function renderProgressChart() {
         return;
     }
     
-    const ctx = document.getElementById('progressChart').getContext('2d');
+    const chartElement = document.getElementById('progressChart');
+    if (!chartElement) return;
+    
+    const ctx = chartElement.getContext('2d');
     
     // Sort running data by date
     const sortedData = [...userStats.progressData].sort((a, b) => new Date(a.runDate) - new Date(b.runDate));
@@ -285,16 +347,23 @@ function shareStats() {
             console.error('ShareTargetPicker failed', error);
         });
     } else {
-        // ShareTargetPicker not available
-        liff.sendMessages([{
-            type: 'text',
-            text: message
-        }]);
-        alert('แชร์ข้อความเรียบร้อยแล้ว');
+        // ShareTargetPicker not available, use existing function if available
+        if (typeof sendLineMessage === 'function') {
+            sendLineMessage(message);
+            alert('แชร์ข้อความเรียบร้อยแล้ว');
+        } else {
+            // Fallback to LIFF's sendMessages
+            liff.sendMessages([{
+                type: 'text',
+                text: message
+            }])
+            .then(() => {
+                alert('แชร์ข้อความเรียบร้อยแล้ว');
+            })
+            .catch((error) => {
+                console.error('Error sending message', error);
+                alert('ไม่สามารถแชร์ข้อความได้');
+            });
+        }
     }
-}
-
-// Helper function to create Supabase client (avoiding repeated code)
-function createClient(url, key) {
-    return supabase.createClient(url, key);
 }
