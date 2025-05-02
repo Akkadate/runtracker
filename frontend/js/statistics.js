@@ -1,11 +1,10 @@
 // js/statistics.js
-// ไฟล์นี้ใช้สำหรับจัดการหน้าแสดงสถิติและอันดับ
 document.addEventListener('DOMContentLoaded', () => {
-    // LIFFが初期化されるのを待つ
+    // Initialize with LIFF
     if (liff.isInClient() && liff.isLoggedIn()) {
         initializeStatisticsPage();
     } else {
-        // 定期的にチェック
+        // Check periodically
         const checkLiffInterval = setInterval(() => {
             if (liff.isInClient() && liff.isLoggedIn()) {
                 clearInterval(checkLiffInterval);
@@ -20,33 +19,49 @@ let rankingData = null;
 
 async function initializeStatisticsPage() {
     try {
-        // ユーザープロファイルの取得
+        // Get user profile
         const profile = await liff.getProfile();
+        console.log("LINE profile loaded:", profile.userId);
         
-        // LINE UserIDを使用してユーザー情報を取得
-        const userData = await apiRequest('/api/users/' + profile.userId);
+        // Create Supabase client
+        const supabase = createClient(
+            'https://jmmtbikvvuyzbhosplli.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptbXRiaWt2dnV5emJob3NwbGxpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYxNTM0ODUsImV4cCI6MjA2MTcyOTQ4NX0.RLJApjPgsvowvEiS_rBCB7CTIPZd14NTcuCT3a3Wb5c'
+        );
+        
+        // Get user data from Supabase
+        const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('userId', profile.userId)
+            .single();
+        
+        if (userError && userError.code !== 'PGRST116') {
+            console.error('Error fetching user data:', userError);
+            throw userError;
+        }
         
         if (!userData) {
-            // ユーザーデータが存在しない場合は、ログイン要求メッセージを表示
+            // User not found, show login required message
             document.getElementById('loginRequired').classList.remove('hidden');
             document.getElementById('statsContainer').classList.add('hidden');
             return;
         }
         
-        // ユーザーがログイン済みの場合、統計を表示
+        // User found, proceed to show statistics
         document.getElementById('loginRequired').classList.add('hidden');
         document.getElementById('statsContainer').classList.remove('hidden');
         
-        // ユーザーの走行データを取得
+        // Load running stats for the user
         await loadUserStats(profile.userId);
         
-        // ランキングデータを取得
+        // Load ranking data
         await loadRankingData();
         
-        // グラフを描画
+        // Render the progress chart
         renderProgressChart();
         
-        // 共有ボタンのイベントリスナーを設定
+        // Set up share button
         document.getElementById('shareStatsButton').addEventListener('click', shareStats);
     } catch (error) {
         console.error('Error initializing statistics page:', error);
@@ -56,13 +71,55 @@ async function initializeStatisticsPage() {
 
 async function loadUserStats(userId) {
     try {
-        userStats = await apiRequest('/api/runs/stats/' + userId);
+        // Get statistics from the runner_rankings view
+        const supabase = createClient(
+            'https://jmmtbikvvuyzbhosplli.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptbXRiaWt2dnV5emJob3NwbGxpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYxNTM0ODUsImV4cCI6MjA2MTcyOTQ4NX0.RLJApjPgsvowvEiS_rBCB7CTIPZd14NTcuCT3a3Wb5c'
+        );
         
-        // 統計データを表示
+        const { data, error } = await supabase
+            .from('runner_rankings')
+            .select('*')
+            .eq('userId', userId)
+            .single();
+        
+        if (error) {
+            console.error('Error fetching user stats:', error);
+            throw error;
+        }
+        
+        if (!data) {
+            // No stats found, create default empty stats
+            userStats = {
+                totaldistance: 0,
+                totalruns: 0,
+                progressData: []
+            };
+        } else {
+            userStats = {
+                totaldistance: data.totaldistance || 0,
+                totalruns: data.totalruns || 0
+            };
+            
+            // Get run data for progress chart
+            const { data: runData, error: runError } = await supabase
+                .from('runs')
+                .select('runDate, distance')
+                .eq('userId', userId)
+                .order('runDate', { ascending: true });
+            
+            if (runError) {
+                console.error('Error fetching run data:', runError);
+            } else {
+                userStats.progressData = runData || [];
+            }
+        }
+        
+        // Update UI with user stats
         document.getElementById('totaldistance').textContent = userStats.totaldistance.toFixed(2);
         document.getElementById('totalruns').textContent = userStats.totalruns;
         
-        // ユーザーの現在のランクを特定
+        // Update rank if ranking data is available
         if (rankingData) {
             const userRank = rankingData.findIndex(item => item.userId === userId) + 1;
             document.getElementById('currentRank').textContent = userRank > 0 ? userRank : '-';
@@ -75,16 +132,32 @@ async function loadUserStats(userId) {
 
 async function loadRankingData() {
     try {
-        rankingData = await apiRequest('/api/runs/ranking');
+        const supabase = createClient(
+            'https://jmmtbikvvuyzbhosplli.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptbXRiaWt2dnV5emJob3NwbGxpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYxNTM0ODUsImV4cCI6MjA2MTcyOTQ4NX0.RLJApjPgsvowvEiS_rBCB7CTIPZd14NTcuCT3a3Wb5c'
+        );
         
-        // ランキングテーブルを生成
+        // Get all rankings from runner_rankings view, sorted by distance
+        const { data, error } = await supabase
+            .from('runner_rankings')
+            .select('*')
+            .order('totaldistance', { ascending: false });
+        
+        if (error) {
+            console.error('Error fetching ranking data:', error);
+            throw error;
+        }
+        
+        rankingData = data || [];
+        
+        // Generate ranking table
         const tableBody = document.getElementById('rankingTableBody');
         tableBody.innerHTML = '';
         
         rankingData.forEach((runner, index) => {
             const row = document.createElement('tr');
             
-            // ユーザー自身の行をハイライト
+            // Highlight current user's row
             if (runner.userId === liff.getContext().userId) {
                 row.classList.add('highlight');
             }
@@ -98,7 +171,7 @@ async function loadRankingData() {
             tableBody.appendChild(row);
         });
         
-        // ユーザーの現在のランクを更新
+        // Update user's current rank
         if (userStats) {
             const userRank = rankingData.findIndex(item => item.userId === liff.getContext().userId) + 1;
             document.getElementById('currentRank').textContent = userRank > 0 ? userRank : '-';
@@ -116,20 +189,20 @@ function renderProgressChart() {
     
     const ctx = document.getElementById('progressChart').getContext('2d');
     
-    // 走行データを日付でソート
+    // Sort running data by date
     const sortedData = [...userStats.progressData].sort((a, b) => new Date(a.runDate) - new Date(b.runDate));
     
-    // 累積距離を計算
+    // Calculate cumulative distance
     let cumulativeDistance = 0;
     const chartData = sortedData.map(run => {
         cumulativeDistance += parseFloat(run.distance);
         return {
-            x: new Date(run.rundate),
+            x: new Date(run.runDate),
             y: cumulativeDistance
         };
     });
     
-    // チャートの設定
+    // Chart configuration
     new Chart(ctx, {
         type: 'line',
         data: {
@@ -185,13 +258,13 @@ function renderProgressChart() {
     });
 }
 
-// 統計を共有する関数
+// Function to share statistics via LINE
 function shareStats() {
     if (!userStats) return;
     
-    const message = `📊 สถิติการวิ่งของฉัน\n🏁 ระยะทางรวม: ${userStats.totaldistance.toFixed(2)} กม.\n🏃 จำนวนครั้ง: ${userstats.totalruns} ครั้ง\n🏆 อันดับปัจจุบัน: ${document.getElementById('currentRank').textContent}`;
+    const message = `📊 สถิติการวิ่งของฉัน\n🏁 ระยะทางรวม: ${userStats.totaldistance.toFixed(2)} กม.\n🏃 จำนวนครั้ง: ${userStats.totalruns} ครั้ง\n🏆 อันดับปัจจุบัน: ${document.getElementById('currentRank').textContent}`;
     
-    // LINEでメッセージを共有
+    // Share message via LINE
     if (liff.isApiAvailable('shareTargetPicker')) {
         liff.shareTargetPicker([
             {
@@ -201,10 +274,10 @@ function shareStats() {
         ])
         .then(function(res) {
             if (res) {
-                // 共有成功
+                // Sharing successful
                 alert('แชร์ข้อมูลเรียบร้อยแล้ว');
             } else {
-                // キャンセルまたは失敗
+                // Canceled or failed
                 console.log('ShareTargetPicker was cancelled by user or failed');
             }
         })
@@ -212,8 +285,16 @@ function shareStats() {
             console.error('ShareTargetPicker failed', error);
         });
     } else {
-        // ShareTargetPickerが利用できない場合
-        sendLineMessage(message);
+        // ShareTargetPicker not available
+        liff.sendMessages([{
+            type: 'text',
+            text: message
+        }]);
         alert('แชร์ข้อความเรียบร้อยแล้ว');
     }
+}
+
+// Helper function to create Supabase client (avoiding repeated code)
+function createClient(url, key) {
+    return supabase.createClient(url, key);
 }
