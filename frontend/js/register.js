@@ -52,6 +52,7 @@ function showProfileMode(profile, userData) {
     document.getElementById('registrationForm').classList.add('hidden');
 }
 
+
 function showRegistrationForm(profile) {
     // 登録フォームを表示
     document.getElementById('registrationForm').classList.remove('hidden');
@@ -60,21 +61,12 @@ function showRegistrationForm(profile) {
     
     // フォーム送信イベントの設定
     document.getElementById('userForm').addEventListener('submit', async (event) => {
-        event.preventDefault();
+        event.preventDefault(); // ป้องกันการส่งฟอร์มแบบปกติ
         
         const nationalid = document.getElementById('nationalid').value;
-        const phonnumber = document.getElementById('phonenumber').value;
-
-        console.log('Form submitted with data:', { nationalId, phoneNumber });
-
-         // ทดสอบเรียก API โดยตรงเพื่อดูผลลัพธ์
-            try {
-                const response = await fetch('https://runtracker.devapp.cc/api/users/ping');
-                const pingData = await response.json();
-                console.log('Ping API response:', pingData);
-            } catch (e) {
-                console.error('Error calling ping API:', e);
-            }
+        const phonenumber = document.getElementById('phonenumber').value; // แก้ไขการสะกดผิด phonnumber -> phonenumber
+        
+        console.log('Form submitted with data:', { nationalid, phonenumber }); // แก้ไขชื่อตัวแปรใน log ให้ตรงกัน
         
         // 入力検証
         if (nationalid.length !== 13 || !/^\d+$/.test(nationalid)) {
@@ -97,7 +89,10 @@ function showRegistrationForm(profile) {
                 phonenumber: phonenumber
             };
             
-            await apiRequest('/api/users', 'POST', userData);
+            console.log('Sending user data to API:', userData);
+            
+            const result = await apiRequest('/api/users', 'POST', userData);
+            console.log('API response:', result);
             
             // 登録成功後、プロファイル表示モードに切り替え
             showProfileMode(profile, userData);
