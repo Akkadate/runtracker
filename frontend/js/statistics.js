@@ -17,20 +17,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (liff.isLoggedIn()) {
         initializeStatisticsPage();
         
-// ตรวจสอบโครงสร้างของตาราง
-console.log("Checking database structure...");
-client.from('runner_rankings').select().limit(1).then(({ data }) => {
-    if (data && data.length > 0) {
-        console.log("runner_rankings column structure:", Object.keys(data[0]));
-    }
-});
-
-client.from('runs').select().limit(1).then(({ data }) => {
-    if (data && data.length > 0) {
-        console.log("runs column structure:", Object.keys(data[0]));
-    }
-});
-        
     } else {
         // Redirect to login or show login message
         showError("กรุณาเข้าสู่ระบบก่อนใช้งาน");
@@ -46,7 +32,21 @@ async function initializeStatisticsPage() {
         const supabaseUrl = 'https://jmmtbikvvuyzbhosplli.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptbXRiaWt2dnV5emJob3NwbGxpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYxNTM0ODUsImV4cCI6MjA2MTcyOTQ4NX0.RLJApjPgsvowvEiS_rBCB7CTIPZd14NTcuCT3a3Wb5c';
         const client = supabase.createClient(supabaseUrl, supabaseKey);
-        
+
+        // ตรวจสอบโครงสร้างของตาราง-------------------
+            console.log("Checking database structure...");
+            client.from('runner_rankings').select().limit(1).then(({ data }) => {
+                if (data && data.length > 0) {
+                    console.log("runner_rankings column structure:", Object.keys(data[0]));
+                }
+            });
+            
+            client.from('runs').select().limit(1).then(({ data }) => {
+                if (data && data.length > 0) {
+                    console.log("runs column structure:", Object.keys(data[0]));
+                }
+            });
+        //---------------------------------------
         // Get LIFF profile
         const profile = await liff.getProfile();
         console.log("User profile:", profile.userId);
@@ -302,7 +302,7 @@ async function loadRankingData(userId, client) {
         // ดึงข้อมูลการจัดอันดับ
         const { data, error } = await client
             .from('runner_rankings')
-            .select('userId,displayname,totaldistance,totalruns')
+            .select('userid,displayname,totaldistance,totalruns')
             .order('totaldistance', { ascending: false });
             
         if (error) {
