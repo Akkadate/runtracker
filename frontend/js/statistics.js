@@ -345,9 +345,9 @@ async function loadRankingData(userId, client) {
                 }
             });
             
-            // อัปเดตอันดับของผู้ใช้
-            console.log("Calculating user rank for user:", userId);
-            const userRankIndex = data.findIndex(item => item.userId === userId);
+            // อัปเดตอันดับของผู้ใช้ ---------------------------------------------------
+            console.log("Calculating user rank for user:", userid);
+            const userRankIndex = data.findIndex(item => item.userid === userid);
             console.log("User rank index:", userRankIndex);
             
             const currentRankElement = document.getElementById('currentRank');
@@ -359,6 +359,7 @@ async function loadRankingData(userId, client) {
                     currentRankElement.textContent = userRank;
                 } else {
                     console.log("User not found in ranking data");
+                    console.log("currentRankElement=" ,userRankIndex);
                     currentRankElement.textContent = '-';
                 }
             } else {
