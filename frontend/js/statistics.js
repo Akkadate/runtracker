@@ -59,43 +59,65 @@ async function initializeStatisticsPage() {
 
 async function loadUserStats(userId, client) {
     try {
-        // Get user stats from runner_rankings
+        console.log("Loading user stats for:", userId);
+        
+        // ดึงข้อมูลสถิติจาก runner_rankings
         const { data, error } = await client
             .from('runner_rankings')
             .select('*')
-            .eq('userid', userId)
+            .eq('userId', userId)
             .single();
         
         if (error && error.code !== 'PGRST116') {
+            console.error("Error fetching user stats:", error);
             throw error;
         }
         
-        // Set default values if no data
+        console.log("User stats data:", data);
+        
+        // ตั้งค่าเริ่มต้นถ้าไม่มีข้อมูล
         const stats = data || { totaldistance: 0, totalruns: 0 };
         
-        // Update UI
-        document.getElementById('totaldistance').textContent = stats.totaldistance.toFixed(2);
-        document.getElementById('totalruns').textContent = stats.totalruns;
-        
-        // Load progress data for chart
-        const { data: runData } = await client
-            .from('runs')
-            .select('rundate, distance')
-            .eq('userid', userId)
-            .order('rundate', { ascending: true });
-            
-        if (runData && runData.length > 0) {
-            renderProgressChart(runData);
+        // อัปเดต UI
+        const totalDistanceElement = document.getElementById('totaldistance');
+        if (totalDistanceElement) {
+            totalDistanceElement.textContent = parseFloat(stats.totaldistance).toFixed(2);
         }
         
-        // Save for share function
+        const totalRunsElement = document.getElementById('totalruns');
+        if (totalRunsElement) {
+            totalRunsElement.textContent = stats.totalruns || '0';
+        }
+        
+        // ดึงข้อมูลสำหรับกราฟความก้าวหน้า
+        console.log("Loading run data for progress chart...");
+        const { data: runData, error: runError } = await client
+            .from('runs')
+            .select('runDate,distance')
+            .eq('userId', userId)
+            .order('runDate', { ascending: true });
+        
+        if (runError) {
+            console.error("Error fetching run data:", runError);
+        } else {
+            console.log("Run data received:", runData);
+            
+            // ถ้ามีข้อมูลการวิ่ง ให้แสดงกราฟ
+            if (runData && runData.length > 0) {
+                renderProgressChart(runData);
+            } else {
+                console.log("No run data available for chart");
+            }
+        }
+        
+        // บันทึกข้อมูลสำหรับฟังก์ชันแชร์
         window.userStats = stats;
         
         return stats;
     } catch (error) {
         console.error("Error loading user stats:", error);
-        showError("ไม่สามารถโหลดสถิติผู้ใช้ได้");
-        throw error;
+        showError("ไม่สามารถโหลดสถิติผู้ใช้ได้: " + error.message);
+        return { totaldistance: 0, totalruns: 0 };
     }
 }
 
@@ -149,27 +171,69 @@ async function loadRankingData(userId, client) {
     }
 }
 
+// แก้ไขฟังก์ชัน renderProgressChart ให้มีการจัดการข้อผิดพลาดที่ดีขึ้น
 function renderProgressChart(runData) {
     try {
-        if (!runData || runData.length === 0) return;
+        console.log("Starting renderProgressChart with data:", runData);
+        
+        if (!runData || runData.length === 0) {
+            console.warn("No run data available for chart");
+            return;
+        }
         
         const chartElement = document.getElementById('progressChart');
-        if (!chartElement) return;
+        if (!chartElement) {
+            console.warn("Progress chart element not found in the DOM");
+            return;
+        }
         
-        const ctx = chartElement.getContext('2d');
+        // ตรวจสอบข้อมูลให้ถูกต้อง
+        const validData = runData.filter(run => run.runDate && run.distance !== undefined);
+        console.log("Valid data for chart:", validData);
         
-        // Calculate cumulative distance
+        if (validData.length === 0) {
+            console.warn("No valid data for chart after filtering");
+            return;
+        }
+        
+        // คำนวณค่าสะสม
         let cumulativeDistance = 0;
-        const chartData = runData.map(run => {
-            cumulativeDistance += parseFloat(run.distance);
-            return {
-                x: new Date(run.runDate),
-                y: cumulativeDistance
-            };
-        });
+        const chartData = [];
         
-        // Create chart
-        new Chart(ctx, {
+        for (const run of validData) {
+            try {
+                // แปลงข้อมูลให้ถูกรูปแบบ
+                const date = new Date(run.runDate);
+                const distance = parseFloat(run.distance);
+                
+                if (!isNaN(distance) && date instanceof Date && !isNaN(date)) {
+                    cumulativeDistance += distance;
+                    chartData.push({
+                        x: date,
+                        y: cumulativeDistance
+                    });
+                }
+            } catch (err) {
+                console.warn("Error processing run data item:", run, err);
+            }
+        }
+        
+        console.log("Processed chart data:", chartData);
+        
+        if (chartData.length === 0) {
+            console.warn("No valid data points after processing");
+            return;
+        }
+        
+        // ตรวจสอบว่า Chart.js โหลดเรียบร้อยแล้ว
+        if (typeof Chart === 'undefined') {
+            console.error("Chart.js library is not loaded");
+            return;
+        }
+        
+        // สร้างกราฟ
+        console.log("Creating chart...");
+        const chart = new Chart(chartElement.getContext('2d'), {
             type: 'line',
             data: {
                 datasets: [{
@@ -208,8 +272,95 @@ function renderProgressChart(runData) {
                 }
             }
         });
+        
+        console.log("Chart created successfully");
     } catch (error) {
         console.error("Error rendering chart:", error);
+    }
+}
+
+// แก้ไขฟังก์ชัน loadRankingData ให้จัดการกับข้อมูลอันดับได้ดีขึ้น
+async function loadRankingData(userId, client) {
+    try {
+        console.log("Loading ranking data for user:", userId);
+        
+        // ดึงข้อมูลการจัดอันดับ
+        const { data, error } = await client
+            .from('runner_rankings')
+            .select('userId,displayname,totaldistance,totalruns')
+            .order('totaldistance', { ascending: false });
+            
+        if (error) {
+            console.error("Error fetching ranking data:", error);
+            throw error;
+        }
+        
+        console.log("Ranking data received:", data);
+        
+        // บันทึกข้อมูลอันดับไว้ใช้ทั่วไป
+        window.rankingData = data || [];
+        
+        // สร้างตารางอันดับ
+        const tableBody = document.getElementById('rankingTableBody');
+        if (!tableBody) {
+            console.warn("Ranking table body element not found");
+            return;
+        }
+        
+        tableBody.innerHTML = '';
+        
+        if (data && data.length > 0) {
+            data.forEach((runner, index) => {
+                // ตรวจสอบว่าข้อมูลมีครบไหม
+                if (runner && runner.totaldistance !== undefined) {
+                    const row = document.createElement('tr');
+                    
+                    // ไฮไลท์ผู้ใช้ปัจจุบัน
+                    if (runner.userId === userId) {
+                        row.classList.add('highlight');
+                    }
+                    
+                    row.innerHTML = `
+                        <td>${index + 1}</td>
+                        <td>${runner.displayname || 'ไม่ระบุชื่อ'}</td>
+                        <td>${parseFloat(runner.totaldistance).toFixed(2)}</td>
+                    `;
+                    
+                    tableBody.appendChild(row);
+                }
+            });
+            
+            // อัปเดตอันดับของผู้ใช้
+            console.log("Calculating user rank for user:", userId);
+            const userRankIndex = data.findIndex(item => item.userId === userId);
+            console.log("User rank index:", userRankIndex);
+            
+            const currentRankElement = document.getElementById('currentRank');
+            if (currentRankElement) {
+                if (userRankIndex >= 0) {
+                    // อันดับเริ่มจาก 1, ไม่ใช่ 0
+                    const userRank = userRankIndex + 1;
+                    console.log("Setting user rank to:", userRank);
+                    currentRankElement.textContent = userRank;
+                } else {
+                    console.log("User not found in ranking data");
+                    currentRankElement.textContent = '-';
+                }
+            } else {
+                console.warn("Current rank element not found in the DOM");
+            }
+        } else {
+            console.warn("No ranking data received");
+            // แสดงข้อความว่าไม่มีข้อมูล
+            const row = document.createElement('tr');
+            row.innerHTML = '<td colspan="3" style="text-align: center;">ไม่มีข้อมูลการจัดอันดับ</td>';
+            tableBody.appendChild(row);
+        }
+        
+        return data;
+    } catch (error) {
+        console.error("Error loading ranking data:", error);
+        return [];
     }
 }
 
