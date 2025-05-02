@@ -110,7 +110,7 @@ async function loadUserStats(userId, client) {
             .from('runs')
             .select('rundate,distance')
             .eq('userid', userId)
-            .order('runDate', { ascending: true });
+            .order('rundate', { ascending: true });
         
         if (runError) {
             console.error("Error fetching run data:", runError);
@@ -203,7 +203,7 @@ function renderProgressChart(runData) {
         }
         
         // ตรวจสอบข้อมูลให้ถูกต้อง
-        const validData = runData.filter(run => run.runDate && run.distance !== undefined);
+        const validData = runData.filter(run => run.rundate && run.distance !== undefined);
         console.log("Valid data for chart:", validData);
         
         if (validData.length === 0) {
@@ -218,7 +218,7 @@ function renderProgressChart(runData) {
         for (const run of validData) {
             try {
                 // แปลงข้อมูลให้ถูกรูปแบบ
-                const date = new Date(run.runDate);
+                const date = new Date(run.rundate);
                 const distance = parseFloat(run.distance);
                 
                 if (!isNaN(distance) && date instanceof Date && !isNaN(date)) {
