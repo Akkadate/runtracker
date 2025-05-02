@@ -28,19 +28,20 @@ router.get('/:userId', async (req, res) => {
     }
 });
 
-// ใน users.js หรือไฟล์ routes อื่น
 router.get('/test-connection', async (req, res) => {
     try {
+        // ทดสอบการเชื่อมต่อโดยนับจำนวนแถวในตาราง
         const { data, error } = await supabase
             .from('users')
-            .select('count()')
-            .limit(1);
+            .select('*', { count: 'exact' })  // ใช้ count แทน single()
+            .limit(5);  // จำกัดจำนวนแถวที่ดึงมา
         
         if (error) throw error;
         
         res.status(200).json({ 
             message: 'Supabase connection successful',
-            data 
+            count: data.length,
+            sample: data.slice(0, 2)  // ส่งตัวอย่างข้อมูล 2 แถวแรก
         });
     } catch (error) {
         console.error('Error connecting to Supabase:', error);
@@ -49,6 +50,11 @@ router.get('/test-connection', async (req, res) => {
             error: error.message 
         });
     }
+});
+
+// เพิ่มเส้นทางสำหรับการทดสอบการเชื่อมต่อแบบง่ายที่สุด
+router.get('/simple-test', async (req, res) => {
+    res.status(200).json({ message: 'API is working' });
 });
 
 // 新しいユーザーを登録
