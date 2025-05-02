@@ -52,6 +52,59 @@ router.get('/test-connection', async (req, res) => {
     }
 });
 
+router.get('/table-info', async (req, res) => {
+    try {
+        // ดึงข้อมูลตัวอย่าง 1 แถวเพื่อดูโครงสร้าง
+        const { data, error } = await supabase
+            .from('users')
+            .select('*')
+            .limit(1);
+        
+        if (error) throw error;
+        
+        // ถ้าพบข้อมูล ให้แสดงชื่อฟิลด์และตัวอย่างข้อมูล
+        if (data && data.length > 0) {
+            const columnNames = Object.keys(data[0]);
+            res.status(200).json({ 
+                message: 'Table structure found',
+                columnNames: columnNames,
+                sampleData: data[0]
+            });
+        } else {
+            // ถ้าไม่พบข้อมูล ลองดึงชื่อคอลัมน์โดยตรงจาก Supabase
+            const { data: tableData, error: tableError } = await supabase
+                .rpc('get_table_columns', { table_name: 'users' });
+            
+            if (tableError) throw tableError;
+            
+            res.status(200).json({ 
+                message: 'Table is empty, showing structure only',
+                columnNames: tableData || []
+            });
+        }
+    } catch (error) {
+        console.error('Error fetching table structure:', error);
+        res.status(500).json({ 
+            message: 'Failed to get table structure',
+            error: error.message 
+        });
+    }
+});
+
+// เพิ่มฟังก์ชัน RPC ใน Supabase SQL Editor
+// CREATE OR REPLACE FUNCTION get_table_columns(table_name text)
+// RETURNS SETOF information_schema.columns AS $$
+//   SELECT column_name, data_type
+//   FROM information_schema.columns
+//   WHERE table_name = $1
+// $$ LANGUAGE sql;
+
+
+router.get('/ping', async (req, res) => {
+    res.status(200).json({ message: 'API is working', timestamp: new Date() });
+});
+
+
 // เพิ่มเส้นทางสำหรับการทดสอบการเชื่อมต่อแบบง่ายที่สุด
 router.get('/simple-test', async (req, res) => {
     res.status(200).json({ message: 'API is working' });
