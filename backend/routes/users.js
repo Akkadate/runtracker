@@ -28,10 +28,35 @@ router.get('/:userId', async (req, res) => {
     }
 });
 
+// ใน users.js หรือไฟล์ routes อื่น
+router.get('/test-connection', async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from('users')
+            .select('count()')
+            .limit(1);
+        
+        if (error) throw error;
+        
+        res.status(200).json({ 
+            message: 'Supabase connection successful',
+            data 
+        });
+    } catch (error) {
+        console.error('Error connecting to Supabase:', error);
+        res.status(500).json({ 
+            message: 'Failed to connect to Supabase',
+            error: error.message 
+        });
+    }
+});
+
 // 新しいユーザーを登録
 router.post('/', async (req, res) => {
     try {
         const { userId, displayName, pictureUrl, nationalId, phoneNumber } = req.body;
+
+        console.log('Received user data:', { userId, displayName, nationalId, phoneNumber });
         
         // 入力検証
         if (!userId || !nationalId || !phoneNumber) {
@@ -59,7 +84,10 @@ router.post('/', async (req, res) => {
                 .eq('userId', userId)
                 .select();
             
-            if (error) throw error;
+                if (error) {
+                    console.error(' exis user Supabase error:', error);
+                    throw error;
+                }
             
             return res.status(200).json(data[0]);
         }
@@ -80,7 +108,10 @@ router.post('/', async (req, res) => {
             ])
             .select();
         
-        if (error) throw error;
+            if (error) {
+                console.error('Insert Supabase error:', error);
+                throw error;
+            }
         
         res.status(201).json(data[0]);
     } catch (error) {
