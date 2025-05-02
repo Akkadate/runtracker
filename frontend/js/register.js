@@ -1,182 +1,211 @@
-// แสดง debug log
-console.log('register.js loaded');
-
-// ตรวจสอบเมื่อหน้าโหลดเสร็จ
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM Content Loaded');
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>สถิติและอันดับ - Running Tracker</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;700&display=swap" rel="stylesheet">
     
-    // ตรวจสอบ LIFF
-    if (typeof liff === 'undefined') {
-        console.error('LIFF SDK not found');
-        document.getElementById('statusMessage').textContent = 'ไม่พบ LIFF SDK กรุณาลองใหม่อีกครั้ง';
-        return;
-    }
+    <!-- Add Supabase JS library before all other scripts -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     
-    console.log('LIFF SDK Found');
+    <!-- Chart.js must be included before statistics.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
-    // เริ่มต้นใช้งาน LIFF
-    liff.ready.then(() => {
-        console.log('LIFF is ready');
-        
-        if (!liff.isLoggedIn()) {
-            console.log('User not logged in, redirecting to login');
-            liff.login();
-            return;
+    <!-- Debugging console (will be visible on the page) -->
+    <style>
+        #debugConsole {
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-top: 20px;
+            height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+            display: none;
         }
         
-        console.log('User is logged in, initializing app');
-        initializeApp();
-    }).catch(err => {
-        console.error('LIFF initialization error', err);
-        document.getElementById('statusMessage').textContent = 'ไม่สามารถเชื่อมต่อกับ LINE ได้';
-    });
-});
-
-// ฟังก์ชันเริ่มต้นแอป
-async function initializeApp() {
-    try {
-        // ดึงข้อมูลโปรไฟล์
-        console.log('Getting user profile');
-        const profile = await liff.getProfile();
-        console.log('User profile:', profile);
+        .log-entry {
+            margin-bottom: 5px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
         
-        // ตรวจสอบข้อมูลผู้ใช้
-        try {
-            console.log('Checking if user exists');
-            const response = await fetch('https://runtracker.devapp.cc/api/users/' + profile.userId);
-            console.log('User check response:', response.status);
+        .log-entry.error {
+            color: red;
+        }
+        
+        .log-entry.warn {
+            color: orange;
+        }
+        
+        .log-entry.info {
+            color: blue;
+        }
+        
+        .toggle-debug {
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            padding: 5px 10px;
+            margin-top: 10px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="index.html" class="back-button">←</a>
+            <h1>สถิติและอันดับ</h1>
+        </div>
+
+        <div id="loginRequired" class="message-container hidden">
+            <div class="message warning">
+                <p>กรุณาลงทะเบียนเพื่อดูสถิติ</p>
+                <a href="register.html" class="btn-primary">ไปที่หน้าลงทะเบียน</a>
+            </div>
+        </div>
+        
+        <div id="loadingIndicator" class="message-container">
+            <div class="loading-spinner"></div>
+            <p>กำลังโหลดข้อมูล...</p>
+        </div>
+        
+        <div id="errorMessage" class="message-container hidden">
+            <div class="message error">
+                <p id="errorText">เกิดข้อผิดพลาดในการโหลดข้อมูล</p>
+                <button onclick="location.reload()" class="btn-primary">ลองใหม่อีกครั้ง</button>
+            </div>
+        </div>
+        
+        <div id="statsContainer" class="stats-container hidden">
+            <div class="stats-card">
+                <h2>สถิติส่วนตัว</h2>
+                <div class="stats-data">
+                    <div class="stat-item">
+                        <span class="stat-label">ระยะทางรวม:</span>
+                        <span id="totaldistance" class="stat-value">0</span>
+                        <span class="stat-unit">กม.</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">จำนวนการวิ่ง:</span>
+                        <span id="totalruns" class="stat-value">0</span>
+                        <span class="stat-unit">ครั้ง</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">อันดับปัจจุบัน:</span>
+                        <span id="currentRank" class="stat-value">-</span>
+                    </div>
+                </div>
+            </div>
             
-            if (response.ok) {
-                const userData = await response.json();
-                console.log('User data found:', userData);
-                showProfileMode(profile, userData);
+            <div class="chart-container">
+                <h2>ความก้าวหน้า</h2>
+                <canvas id="progressChart"></canvas>
+            </div>
+            
+            <div class="ranking-container">
+                <h2>อันดับนักวิ่ง</h2>
+                <div class="table-container">
+                    <table id="rankingTable">
+                        <thead>
+                            <tr>
+                                <th>อันดับ</th>
+                                <th>ชื่อ</th>
+                                <th>ระยะทางรวม (กม.)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rankingTableBody">
+                            <!-- จะถูกเติมด้วย JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="share-container">
+                <button id="shareStatsButton" class="btn-secondary">แชร์สถิติไปยัง LINE</button>
+            </div>
+        </div>
+        
+        <button class="toggle-debug" onclick="toggleDebug()">Show/Hide Debug Console</button>
+        <div id="debugConsole"></div>
+        
+        <div class="footer">
+            <p>Running Tracker v1.0</p>
+        </div>
+    </div>
+
+    <!-- Debug console script -->
+    <script>
+        function toggleDebug() {
+            const debugConsole = document.getElementById('debugConsole');
+            if (debugConsole.style.display === 'none' || !debugConsole.style.display) {
+                debugConsole.style.display = 'block';
             } else {
-                console.log('User not found, showing registration form');
-                showRegistrationForm(profile);
+                debugConsole.style.display = 'none';
             }
-        } catch (error) {
-            console.error('Error checking user:', error);
-            showRegistrationForm(profile);
         }
         
-        // เพิ่ม event listener สำหรับปุ่มส่ง
-        setupSubmitButton(profile);
-    } catch (error) {
-        console.error('App initialization error:', error);
-        document.getElementById('statusMessage').textContent = 'เกิดข้อผิดพลาดในการเริ่มต้นแอป: ' + error.message;
-    }
-}
-
-// แสดงโปรไฟล์
-function showProfileMode(profile, userData) {
-    console.log('Showing profile mode');
-    
-    // อัปเดตข้อมูลโปรไฟล์
-    if (profile.pictureUrl) {
-        document.getElementById('profileImage').src = profile.pictureUrl;
-    }
-    document.getElementById('displayName').textContent = profile.displayName;
-    document.getElementById('profile-nationalid').textContent = userData.nationalid;
-    document.getElementById('profile-phonenumber').textContent = userData.phonenumber;
-    
-    // แสดง/ซ่อนส่วนต่างๆ
-    document.getElementById('profileContainer').classList.remove('hidden');
-    document.getElementById('registrationForm').classList.add('hidden');
-}
-
-// แสดงฟอร์มลงทะเบียน
-function showRegistrationForm(profile) {
-    console.log('Showing registration form');
-    
-    // แสดง/ซ่อนส่วนต่างๆ
-    document.getElementById('registrationForm').classList.remove('hidden');
-    document.getElementById('profileContainer').classList.add('hidden');
-    
-    // ล้างค่าฟอร์ม
-    document.getElementById('form-nationalid').value = '';
-    document.getElementById('form-phonenumber').value = '';
-    document.getElementById('statusMessage').textContent = '';
-}
-
-// ตั้งค่าปุ่มส่งฟอร์ม
-function setupSubmitButton(profile) {
-    const submitBtn = document.getElementById('submitBtn');
-    
-    if (!submitBtn) {
-        console.error('Submit button not found');
-        return;
-    }
-    
-    console.log('Setting up submit button');
-    
-    submitBtn.onclick = async function() {
-        try {
-            console.log('Submit button clicked');
-            document.getElementById('statusMessage').textContent = 'กำลังส่งข้อมูล...';
+        // Override console methods to show in our debug console
+        const originalConsole = {
+            log: console.log,
+            error: console.error,
+            warn: console.warn,
+            info: console.info
+        };
+        
+        function addLogToDebugConsole(type, args) {
+            const debugConsole = document.getElementById('debugConsole');
+            if (!debugConsole) return;
             
-            // ดึงข้อมูลจากฟอร์ม
-            const nationalidElement = document.getElementById('form-nationalid');
-            const phonenumberElement = document.getElementById('form-phonenumber');
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry ${type}`;
             
-            console.log('Input elements:', {
-                nationalidElement: nationalidElement ? 'found' : 'not found',
-                phonenumberElement: phonenumberElement ? 'found' : 'not found'
-            });
+            const timestamp = new Date().toLocaleTimeString();
+            const message = Array.from(args).map(arg => {
+                if (typeof arg === 'object') {
+                    try {
+                        return JSON.stringify(arg);
+                    } catch (e) {
+                        return String(arg);
+                    }
+                }
+                return String(arg);
+            }).join(' ');
             
-            if (!nationalidElement || !phonenumberElement) {
-                throw new Error('ไม่พบช่องกรอกข้อมูล');
-            }
-            
-            const nationalid = nationalidElement.value;
-            const phonenumber = phonenumberElement.value;
-            
-            console.log('Form data:', { nationalid, phonenumber });
-            
-            // ตรวจสอบข้อมูล
-            if (!nationalid || nationalid.length !== 13 || !/^\d+$/.test(nationalid)) {
-                document.getElementById('statusMessage').textContent = 'กรุณากรอกเลขบัตรประชาชน 13 หลัก';
-                return;
-            }
-            
-            if (!phonenumber || phonenumber.length !== 10 || !/^\d+$/.test(phonenumber)) {
-                document.getElementById('statusMessage').textContent = 'กรุณากรอกเบอร์โทรศัพท์ 10 หลัก';
-                return;
-            }
-            
-            // สร้างข้อมูลที่จะส่ง
-            const userData = {
-                userid: profile.userId,
-                displayname: profile.displayName,
-                pictureurl: profile.pictureUrl || '',
-                nationalid: nationalid,
-                phonenumber: phonenumber
-            };
-            
-            console.log('Sending user data:', userData);
-            
-            // ส่งข้อมูล
-            const response = await fetch('https://runtracker.devapp.cc/api/users', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(userData)
-            });
-            
-            console.log('API response status:', response.status);
-            
-            const result = await response.json();
-            console.log('API response data:', result);
-            
-            // แสดงผลสำเร็จ
-            document.getElementById('statusMessage').textContent = 'ลงทะเบียนเรียบร้อยแล้ว';
-            alert('ลงทะเบียนเรียบร้อยแล้ว');
-            
-            // แสดงหน้าโปรไฟล์
-            showProfileMode(profile, userData);
-        } catch (error) {
-            console.error('Registration error:', error);
-            document.getElementById('statusMessage').textContent = 'เกิดข้อผิดพลาด: ' + error.message;
+            logEntry.textContent = `[${timestamp}] [${type.toUpperCase()}]: ${message}`;
+            debugConsole.appendChild(logEntry);
+            debugConsole.scrollTop = debugConsole.scrollHeight;
         }
-    };
-}
+        
+        console.log = function() {
+            originalConsole.log.apply(console, arguments);
+            addLogToDebugConsole('log', arguments);
+        };
+        
+        console.error = function() {
+            originalConsole.error.apply(console, arguments);
+            addLogToDebugConsole('error', arguments);
+        };
+        
+        console.warn = function() {
+            originalConsole.warn.apply(console, arguments);
+            addLogToDebugConsole('warn', arguments);
+        };
+        
+        console.info = function() {
+            originalConsole.info.apply(console, arguments);
+            addLogToDebugConsole('info', arguments);
+        };
+    </script>
+
+    <!-- Scripts should be at the end of the body -->
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <script src="js/liff-init.js"></script>
+    <script src="js/api-client.js"></script>
+    <script src="js/statistics.js"></script>
+</body>
+</html>
