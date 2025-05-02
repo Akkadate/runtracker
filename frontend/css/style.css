@@ -20,6 +20,12 @@ body {
     position: relative;
 }
 
+.chart-container {
+    margin-bottom: 30px;
+    height: 300px; /* กำหนดความสูงที่ชัดเจน */
+    position: relative; /* จำเป็นสำหรับ responsive chart */
+}
+
 .header {
     display: flex;
     align-items: center;
