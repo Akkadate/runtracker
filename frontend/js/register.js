@@ -1,211 +1,113 @@
-<!DOCTYPE html>
-<html lang="th">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>สถิติและอันดับ - Running Tracker</title>
-    <link rel="stylesheet" href="css/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;700&display=swap" rel="stylesheet">
+// js/statistics.js - Simplified testing version
+document.addEventListener('DOMContentLoaded', () => {
+    console.log("DOM Content Loaded");
     
-    <!-- Add Supabase JS library before all other scripts -->
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    // Step 1: Test LIFF
+    console.log("Testing LIFF...");
+    if (typeof liff === 'undefined') {
+        console.error("LIFF is not defined");
+        showError("LIFF library not loaded properly");
+        return;
+    }
     
-    <!-- Chart.js must be included before statistics.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    // Step 2: Test Supabase
+    console.log("Testing Supabase...");
+    if (typeof supabase === 'undefined') {
+        console.error("Supabase is not defined");
+        showError("Supabase library not loaded properly");
+        return;
+    }
     
-    <!-- Debugging console (will be visible on the page) -->
-    <style>
-        #debugConsole {
-            background-color: #f0f0f0;
-            border: 1px solid #ccc;
-            padding: 10px;
-            margin-top: 20px;
-            height: 200px;
-            overflow-y: auto;
-            font-family: monospace;
-            font-size: 12px;
-            display: none;
-        }
+    // Step 3: Try to create Supabase client
+    console.log("Creating Supabase client...");
+    try {
+        const supabaseUrl = 'https://jmmtbikvvuyzbhosplli.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptbXRiaWt2dnV5emJob3NwbGxpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYxNTM0ODUsImV4cCI6MjA2MTcyOTQ4NX0.RLJApjPgsvowvEiS_rBCB7CTIPZd14NTcuCT3a3Wb5c';
+        const client = supabase.createClient(supabaseUrl, supabaseKey);
+        console.log("Supabase client created successfully:", client);
         
-        .log-entry {
-            margin-bottom: 5px;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 5px;
-        }
-        
-        .log-entry.error {
-            color: red;
-        }
-        
-        .log-entry.warn {
-            color: orange;
-        }
-        
-        .log-entry.info {
-            color: blue;
-        }
-        
-        .toggle-debug {
-            background-color: #f0f0f0;
-            border: 1px solid #ccc;
-            padding: 5px 10px;
-            margin-top: 10px;
-            cursor: pointer;
-            font-size: 12px;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <a href="index.html" class="back-button">←</a>
-            <h1>สถิติและอันดับ</h1>
-        </div>
+        // Step 4: Try a simple Supabase query
+        console.log("Testing Supabase query...");
+        client.from('users').select('count(*)')
+            .then(response => {
+                console.log("Supabase query response:", response);
+                
+                // If we got here, Supabase is working fine
+                // We can now try LIFF authentication
+                testLIFFAuth();
+            })
+            .catch(error => {
+                console.error("Supabase query error:", error);
+                showError("Cannot connect to database: " + error.message);
+            });
+    } catch (error) {
+        console.error("Error creating Supabase client:", error);
+        showError("Error initializing database connection: " + error.message);
+    }
+});
 
-        <div id="loginRequired" class="message-container hidden">
-            <div class="message warning">
-                <p>กรุณาลงทะเบียนเพื่อดูสถิติ</p>
-                <a href="register.html" class="btn-primary">ไปที่หน้าลงทะเบียน</a>
-            </div>
-        </div>
-        
-        <div id="loadingIndicator" class="message-container">
-            <div class="loading-spinner"></div>
-            <p>กำลังโหลดข้อมูล...</p>
-        </div>
-        
-        <div id="errorMessage" class="message-container hidden">
-            <div class="message error">
-                <p id="errorText">เกิดข้อผิดพลาดในการโหลดข้อมูล</p>
-                <button onclick="location.reload()" class="btn-primary">ลองใหม่อีกครั้ง</button>
-            </div>
-        </div>
-        
-        <div id="statsContainer" class="stats-container hidden">
-            <div class="stats-card">
-                <h2>สถิติส่วนตัว</h2>
-                <div class="stats-data">
-                    <div class="stat-item">
-                        <span class="stat-label">ระยะทางรวม:</span>
-                        <span id="totaldistance" class="stat-value">0</span>
-                        <span class="stat-unit">กม.</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">จำนวนการวิ่ง:</span>
-                        <span id="totalruns" class="stat-value">0</span>
-                        <span class="stat-unit">ครั้ง</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">อันดับปัจจุบัน:</span>
-                        <span id="currentRank" class="stat-value">-</span>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="chart-container">
-                <h2>ความก้าวหน้า</h2>
-                <canvas id="progressChart"></canvas>
-            </div>
-            
-            <div class="ranking-container">
-                <h2>อันดับนักวิ่ง</h2>
-                <div class="table-container">
-                    <table id="rankingTable">
-                        <thead>
-                            <tr>
-                                <th>อันดับ</th>
-                                <th>ชื่อ</th>
-                                <th>ระยะทางรวม (กม.)</th>
-                            </tr>
-                        </thead>
-                        <tbody id="rankingTableBody">
-                            <!-- จะถูกเติมด้วย JavaScript -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            
-            <div class="share-container">
-                <button id="shareStatsButton" class="btn-secondary">แชร์สถิติไปยัง LINE</button>
-            </div>
-        </div>
-        
-        <button class="toggle-debug" onclick="toggleDebug()">Show/Hide Debug Console</button>
-        <div id="debugConsole"></div>
-        
-        <div class="footer">
-            <p>Running Tracker v1.0</p>
-        </div>
-    </div>
-
-    <!-- Debug console script -->
-    <script>
-        function toggleDebug() {
-            const debugConsole = document.getElementById('debugConsole');
-            if (debugConsole.style.display === 'none' || !debugConsole.style.display) {
-                debugConsole.style.display = 'block';
-            } else {
-                debugConsole.style.display = 'none';
-            }
+function testLIFFAuth() {
+    console.log("Testing LIFF authentication...");
+    try {
+        if (!liff.isLoggedIn()) {
+            console.warn("User is not logged in");
+            showError("ยังไม่ได้เข้าสู่ระบบ LINE กรุณาเข้าสู่ระบบ");
+            return;
         }
         
-        // Override console methods to show in our debug console
-        const originalConsole = {
-            log: console.log,
-            error: console.error,
-            warn: console.warn,
-            info: console.info
-        };
-        
-        function addLogToDebugConsole(type, args) {
-            const debugConsole = document.getElementById('debugConsole');
-            if (!debugConsole) return;
-            
-            const logEntry = document.createElement('div');
-            logEntry.className = `log-entry ${type}`;
-            
-            const timestamp = new Date().toLocaleTimeString();
-            const message = Array.from(args).map(arg => {
-                if (typeof arg === 'object') {
-                    try {
-                        return JSON.stringify(arg);
-                    } catch (e) {
-                        return String(arg);
-                    }
-                }
-                return String(arg);
-            }).join(' ');
-            
-            logEntry.textContent = `[${timestamp}] [${type.toUpperCase()}]: ${message}`;
-            debugConsole.appendChild(logEntry);
-            debugConsole.scrollTop = debugConsole.scrollHeight;
-        }
-        
-        console.log = function() {
-            originalConsole.log.apply(console, arguments);
-            addLogToDebugConsole('log', arguments);
-        };
-        
-        console.error = function() {
-            originalConsole.error.apply(console, arguments);
-            addLogToDebugConsole('error', arguments);
-        };
-        
-        console.warn = function() {
-            originalConsole.warn.apply(console, arguments);
-            addLogToDebugConsole('warn', arguments);
-        };
-        
-        console.info = function() {
-            originalConsole.info.apply(console, arguments);
-            addLogToDebugConsole('info', arguments);
-        };
-    </script>
+        console.log("Getting LIFF profile...");
+        liff.getProfile()
+            .then(profile => {
+                console.log("LIFF profile retrieved:", profile);
+                showSuccess("สามารถโหลดข้อมูลได้แล้ว กำลังแสดงสถิติ...");
+                
+                // If we got here, everything is working correctly
+                hideElement('loadingIndicator');
+                showElement('statsContainer');
+                
+                // You can continue with your statistics loading here
+                // or keep this test file simple
+            })
+            .catch(error => {
+                console.error("Error getting LIFF profile:", error);
+                showError("ไม่สามารถรับข้อมูลโปรไฟล์ LINE: " + error.message);
+            });
+    } catch (error) {
+        console.error("LIFF authentication error:", error);
+        showError("LINE authentication error: " + error.message);
+    }
+}
 
-    <!-- Scripts should be at the end of the body -->
-    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    <script src="js/liff-init.js"></script>
-    <script src="js/api-client.js"></script>
-    <script src="js/statistics.js"></script>
-</body>
-</html>
+// Helper functions for UI management
+function showError(message) {
+    hideElement('loadingIndicator');
+    
+    const errorTextElement = document.getElementById('errorText');
+    const errorMessageElement = document.getElementById('errorMessage');
+    
+    if (errorTextElement) {
+        errorTextElement.innerText = message;
+    }
+    
+    if (errorMessageElement) {
+        errorMessageElement.classList.remove('hidden');
+    }
+}
+
+function showSuccess(message) {
+    console.log("SUCCESS:", message);
+}
+
+function hideElement(id) {
+    const element = document.getElementById(id);
+    if (element) {
+        element.classList.add('hidden');
+    }
+}
+
+function showElement(id) {
+    const element = document.getElementById(id);
+    if (element) {
+        element.classList.remove('hidden');
+    }
+}
