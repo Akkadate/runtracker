@@ -1,0 +1,64 @@
+ SQL Script สำหรับสร้างตารางที่จำเป็นใน Supabase แล้วครับ ต่อไปนี้เป็นคำอธิบายโดยละเอียดเกี่ยวกับวิธีใช้:
+
+## วิธีการใช้งาน SQL Script
+
+1. **เข้าสู่ Supabase Dashboard**:
+   - ล็อกอินเข้าสู่ [Supabase Dashboard](https://app.supabase.io)
+   - เลือกโปรเจคที่คุณสร้างไว้
+
+2. **เปิด SQL Editor**:
+   - คลิกที่แท็บ "SQL Editor" ในเมนูด้านซ้าย
+
+3. **คัดลอกและรัน SQL Script**:
+   - คัดลอก SQL Script ทั้งหมดจากอาร์ติแฟกต์ด้านบน
+   - วางลงใน SQL Editor
+   - กดปุ่ม "Run" เพื่อสร้างตารางและการตั้งค่าที่จำเป็น
+
+## รายละเอียดโครงสร้างฐานข้อมูล
+
+### ตาราง `users`
+- **userId** (TEXT, Primary Key): LINE User ID
+- **displayName** (TEXT): ชื่อผู้ใช้จาก LINE
+- **pictureUrl** (TEXT): URL รูปโปรไฟล์จาก LINE
+- **nationalId** (TEXT): เลขบัตรประชาชน
+- **phoneNumber** (TEXT): เบอร์โทรศัพท์
+- **createdAt** (TIMESTAMP): วันที่สร้างข้อมูล
+- **updatedAt** (TIMESTAMP): วันที่อัปเดตข้อมูลล่าสุด
+
+### ตาราง `runs`
+- **id** (UUID, Primary Key): ID ของข้อมูลการวิ่ง (สร้างอัตโนมัติ)
+- **userId** (TEXT, Foreign Key): อ้างอิงไปยัง users.userId
+- **runDate** (DATE): วันที่วิ่ง
+- **distance** (DECIMAL): ระยะทาง (กิโลเมตร)
+- **duration** (DECIMAL): เวลาที่ใช้ (นาที)
+- **imageUrl** (TEXT): URL ของรูปภาพหลักฐาน
+- **createdAt** (TIMESTAMP): วันที่บันทึกข้อมูล
+
+## การตั้งค่า Storage
+
+หลังจากรัน SQL Script แล้ว คุณต้องสร้าง Storage Bucket สำหรับเก็บรูปภาพหลักฐาน:
+
+1. คลิกที่แท็บ "Storage" ในเมนูด้านซ้าย
+2. คลิกปุ่ม "Create a new bucket"
+3. ตั้งชื่อ bucket เป็น "running-proofs"
+4. ตั้งค่า Bucket Policy ให้เป็นสาธารณะ (public) หรือตั้งค่าตามนี้:
+   
+   ```sql
+   -- ตั้งค่าให้สามารถอัปโหลดไฟล์ได้ (สำหรับผู้ใช้ที่ล็อกอิน)
+   CREATE POLICY "Anyone can upload images"
+   ON storage.objects FOR INSERT
+   WITH CHECK (true);
+   
+   -- ตั้งค่าให้สามารถดูไฟล์ได้ (สำหรับทุกคน)
+   CREATE POLICY "Anyone can view images"
+   ON storage.objects FOR SELECT
+   USING (true);
+   ```
+
+## คำอธิบายเพิ่มเติม
+
+- **Row Level Security (RLS)**: SQL Script มีการสร้างนโยบายความปลอดภัย (Security Policies) เพื่อควบคุมการเข้าถึงข้อมูล
+- **Indexes**: มีการสร้างดัชนีเพื่อให้การค้นหาข้อมูลเร็วขึ้น
+- **View**: มีการสร้าง View ชื่อ `runner_rankings` สำหรับการดูอันดับนักวิ่ง
+- **Functions**: มีฟังก์ชันสำหรับคำนวณระยะทางรวมและจำนวนครั้งที่วิ่ง
+

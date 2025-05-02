@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LINE Running Tracker</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img id="profileImage" src="https://via.placeholder.com/100" alt="Profile Image">
+            <h1 id="displayName">LINE Running Tracker</h1>
+        </div>
+        
+        <div class="menu">
+            <a href="register.html" class="menu-item">
+                <div class="menu-icon">👤</div>
+                <div class="menu-text">ลงทะเบียน / โปรไฟล์</div>
+            </a>
+            <a href="submit-run.html" class="menu-item">
+                <div class="menu-icon">🏃</div>
+                <div class="menu-text">ส่งข้อมูลการวิ่ง</div>
+            </a>
+            <a href="statistics.html" class="menu-item">
+                <div class="menu-icon">📊</div>
+                <div class="menu-text">สถิติและอันดับ</div>
+            </a>
+        </div>
+        
+        <div class="footer">
+            <p>LINE Running Tracker v1.0</p>
+        </div>
+    </div>
+
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <script src="js/liff-init.js"></script>
+</body>
+</html>

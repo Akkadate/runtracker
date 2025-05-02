@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ส่งข้อมูลการวิ่ง - LINE Running Tracker</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="index.html" class="back-button">←</a>
+            <h1>ส่งข้อมูลการวิ่ง</h1>
+        </div>
+
+        <div id="loginRequired" class="message-container hidden">
+            <div class="message warning">
+                <p>กรุณาลงทะเบียนก่อนส่งข้อมูลการวิ่ง</p>
+                <a href="register.html" class="btn-primary">ไปที่หน้าลงทะเบียน</a>
+            </div>
+        </div>
+        
+        <div id="runForm" class="form-container">
+            <form id="submitRunForm">
+                <div class="form-group">
+                    <label for="runDate">วันที่วิ่ง:</label>
+                    <input type="date" id="runDate" name="runDate" required>
+                </div>
+                <div class="form-group">
+                    <label for="distance">ระยะทาง (กิโลเมตร):</label>
+                    <input type="number" id="distance" name="distance" step="0.01" min="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label for="duration">เวลาที่ใช้ (นาที):</label>
+                    <input type="number" id="duration" name="duration" step="0.01" min="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label for="proofImage">ภาพหลักฐาน:</label>
+                    <input type="file" id="proofImage" name="proofImage" accept="image/*" required>
+                    <div id="imagePreview" class="image-preview"></div>
+                </div>
+                <button type="submit" class="btn-primary">บันทึกข้อมูล</button>
+            </form>
+        </div>
+
+        <div id="successMessage" class="message-container hidden">
+            <div class="message success">
+                <p>บันทึกข้อมูลการวิ่งเรียบร้อยแล้ว!</p>
+                <div class="share-container">
+                    <button id="shareButton" class="btn-secondary">แชร์ผลงานไปยัง LINE</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>LINE Running Tracker v1.0</p>
+        </div>
+    </div>
+
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <script src="js/liff-init.js"></script>
+    <script src="js/submit-run.js"></script>
+</body>
+</html>

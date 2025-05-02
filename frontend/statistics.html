@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>สถิติและอันดับ - LINE Running Tracker</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="index.html" class="back-button">←</a>
+            <h1>สถิติและอันดับ</h1>
+        </div>
+
+        <div id="loginRequired" class="message-container hidden">
+            <div class="message warning">
+                <p>กรุณาลงทะเบียนเพื่อดูสถิติ</p>
+                <a href="register.html" class="btn-primary">ไปที่หน้าลงทะเบียน</a>
+            </div>
+        </div>
+        
+        <div id="statsContainer" class="stats-container">
+            <div class="stats-card">
+                <h2>สถิติส่วนตัว</h2>
+                <div class="stats-data">
+                    <div class="stat-item">
+                        <span class="stat-label">ระยะทางรวม:</span>
+                        <span id="totalDistance" class="stat-value">0</span>
+                        <span class="stat-unit">กม.</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">จำนวนการวิ่ง:</span>
+                        <span id="totalRuns" class="stat-value">0</span>
+                        <span class="stat-unit">ครั้ง</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">อันดับปัจจุบัน:</span>
+                        <span id="currentRank" class="stat-value">-</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="chart-container">
+                <h2>ความก้าวหน้า</h2>
+                <canvas id="progressChart"></canvas>
+            </div>
+            
+            <div class="ranking-container">
+                <h2>อันดับนักวิ่ง</h2>
+                <div class="table-container">
+                    <table id="rankingTable">
+                        <thead>
+                            <tr>
+                                <th>อันดับ</th>
+                                <th>ชื่อ</th>
+                                <th>ระยะทางรวม (กม.)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rankingTableBody">
+                            <!-- จะถูกเติมด้วย JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="share-container">
+                <button id="shareStatsButton" class="btn-secondary">แชร์สถิติไปยัง LINE</button>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>LINE Running Tracker v1.0</p>
+        </div>
+    </div>
+
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <script src="js/liff-init.js"></script>
+    <script src="js/statistics.js"></script>
+</body>
+</html>
