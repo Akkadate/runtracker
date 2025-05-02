@@ -104,8 +104,8 @@ async function loadUserStats(userId, client) {
             totalRunsElement.textContent = stats.totalruns || '0';
         }
         
-        // ดึงข้อมูลสำหรับกราฟความก้าวหน้า
-        console.log("Loading run data for progress chart...");
+        // ดึงข้อมูลสำหรับกราฟ
+        console.log("Loading run data for charts...");
         const { data: runData, error: runError } = await client
             .from('runs')
             .select('rundate,distance')
@@ -120,8 +120,9 @@ async function loadUserStats(userId, client) {
             // ถ้ามีข้อมูลการวิ่ง ให้แสดงกราฟ
             if (runData && runData.length > 0) {
                 renderProgressChart(runData);
+                renderDistancePerRunChart(runData); // เรียกใช้กราฟแท่งด้วย
             } else {
-                console.log("No run data available for chart");
+                console.log("No run data available for charts");
             }
         }
         
@@ -183,6 +184,130 @@ async function loadRankingData(userId, client) {
         console.error("Error loading ranking data:", error);
         showError("ไม่สามารถโหลดข้อมูลอันดับได้");
         throw error;
+    }
+}
+
+// เพิ่มฟังก์ชันสำหรับสร้างกราฟแท่งแสดงระยะทางแต่ละครั้ง
+function renderDistancePerRunChart(runData) {
+    try {
+        console.log("Starting renderDistancePerRunChart with data:", runData);
+        
+        if (!runData || runData.length === 0) {
+            console.warn("No run data available for distance per run chart");
+            return;
+        }
+        
+        const chartElement = document.getElementById('distancePerRunChart');
+        if (!chartElement) {
+            console.warn("Distance per run chart element not found in the DOM");
+            return;
+        }
+        
+        // กำหนดความสูงและความกว้างโดยตรงที่ element
+        chartElement.style.maxHeight = '200px';
+        chartElement.style.width = '100%';
+        chartElement.height = 200;
+        
+        // ตั้งค่า parent container ให้มีความสูงที่จำกัดเช่นกัน
+        const chartContainer = chartElement.closest('.chart-container');
+        if (chartContainer) {
+            chartContainer.style.maxHeight = '250px';
+            chartContainer.style.height = '250px';
+        }
+        
+        // ตรวจสอบข้อมูลให้ถูกต้อง
+        const validData = runData.filter(run => run.rundate && run.distance !== undefined);
+        console.log("Valid data for distance per run chart:", validData);
+        
+        if (validData.length === 0) {
+            console.warn("No valid data for distance per run chart after filtering");
+            return;
+        }
+        
+        // เรียงลำดับข้อมูลตามวันที่
+        validData.sort((a, b) => new Date(a.rundate) - new Date(b.rundate));
+        
+        // แสดงเฉพาะข้อมูล 10 รายการล่าสุด ถ้ามีมากกว่า 10 รายการ
+        const limitedData = validData.length > 10 ? validData.slice(-10) : validData;
+        
+        // สร้างข้อมูลสำหรับกราฟแท่ง
+        const labels = limitedData.map(run => {
+            const date = new Date(run.rundate);
+            return date.toLocaleDateString('th-TH', { day: '2-digit', month: 'short' });
+        });
+        
+        const data = limitedData.map(run => parseFloat(run.distance));
+        
+        console.log("Bar chart data prepared:", { labels, data });
+        
+        // สร้างกราฟแท่ง
+        console.log("Creating bar chart...");
+        const chart = new Chart(chartElement.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'ระยะทาง (กม.)',
+                    data: data,
+                    backgroundColor: 'rgba(6, 199, 85, 0.7)',
+                    borderColor: '#06c755',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                layout: {
+                    padding: 0
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: false
+                        },
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45,
+                            font: {
+                                size: 10
+                            }
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: false
+                        },
+                        ticks: {
+                            font: {
+                                size: 10
+                            }
+                        },
+                        min: 0
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        enabled: true,
+                        displayColors: false,
+                        callbacks: {
+                            title: function(context) {
+                                return limitedData[context[0].dataIndex].rundate;
+                            },
+                            label: function(context) {
+                                return `ระยะทาง: ${context.raw.toFixed(2)} กม.`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        console.log("Bar chart created successfully");
+    } catch (error) {
+        console.error("Error rendering distance per run chart:", error);
     }
 }
 
