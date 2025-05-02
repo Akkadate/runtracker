@@ -1,3 +1,16 @@
+// ตรวจสอบการโหลดไฟล์
+console.log('register.js loaded');
+
+// ตรวจสอบสถานะของ LIFF
+window.addEventListener('load', function() {
+    console.log('Window loaded');
+    console.log('LIFF status:', {
+        isDefined: typeof liff !== 'undefined',
+        isInClient: liff?.isInClient?.() || false,
+        isLoggedIn: liff?.isLoggedIn?.() || false
+    });
+});
+
 // รวมเหลือเพียง listener เดียว
 document.addEventListener('DOMContentLoaded', () => {
     console.log('DOM loaded');
@@ -87,21 +100,41 @@ function showRegistrationForm(profile) {
         <div id="statusMessage"></div>
     `;
     
+    // เพิ่มการตรวจสอบว่า element มีอยู่จริงหรือไม่
+    const submitBtn = document.getElementById('submitBtn');
+    if (!submitBtn) {
+        console.error('ไม่พบปุ่ม submitBtn!');
+        return;
+    }
+    
     // กำหนด event handler
-    document.getElementById('submitBtn').onclick = async function() {
+    submitBtn.onclick = async function() {
         try {
-            const nationalid = document.getElementById('nationalid').value;
-            const phonenumber = document.getElementById('phonenumber').value;
+            // ตรวจสอบว่า element มีอยู่จริงหรือไม่
+            const nationalidElement = document.getElementById('nationalid');
+            const phonenumberElement = document.getElementById('phonenumber');
+            
+            if (!nationalidElement || !phonenumberElement) {
+                console.error('ไม่พบช่องกรอกข้อมูล!', {
+                    nationalidElement,
+                    phonenumberElement
+                });
+                alert('เกิดข้อผิดพลาด: ไม่พบช่องกรอกข้อมูล');
+                return;
+            }
+            
+            const nationalid = nationalidElement.value;
+            const phonenumber = phonenumberElement.value;
             
             console.log('ข้อมูลที่กรอก:', { nationalid, phonenumber });
             
             // ตรวจสอบข้อมูล
-            if (nationalid.length !== 13 || !/^\d+$/.test(nationalid)) {
+            if (!nationalid || nationalid.length !== 13 || !/^\d+$/.test(nationalid)) {
                 alert('กรุณากรอกเลขบัตรประชาชน 13 หลัก');
                 return;
             }
             
-            if (phonenumber.length !== 10 || !/^\d+$/.test(phonenumber)) {
+            if (!phonenumber || phonenumber.length !== 10 || !/^\d+$/.test(phonenumber)) {
                 alert('กรุณากรอกเบอร์โทรศัพท์ 10 หลัก');
                 return;
             }
