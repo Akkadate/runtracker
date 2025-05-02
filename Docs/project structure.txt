@@ -1,0 +1,24 @@
+PROJECT STRUCTURE
+----------------
+/line-running-tracker/
+  ├── frontend/
+  │   ├── index.html
+  │   ├── register.html
+  │   ├── submit-run.html
+  │   ├── statistics.html
+  │   ├── css/
+  │   │   └── style.css
+  │   └── js/
+  │       ├── liff-init.js
+  │       ├── register.js
+  │       ├── submit-run.js
+  │       └── statistics.js
+  ├── backend/
+  │   ├── server.js
+  │   ├── routes/
+  │   │   ├── users.js
+  │   │   └── runs.js
+  │   ├── config/
+  │   │   └── supabase.js
+  │   └── package.json
+  └── README.md
