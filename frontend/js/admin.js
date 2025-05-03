@@ -45,50 +45,50 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // ฟังก์ชันแสดงตารางข้อมูล
-    function displayTable(data) {
-        // ซ่อนข้อความ loading
-        document.getElementById('loading').style.display = 'none';
-        
-        // สร้างข้อมูลสำหรับตาราง
-        const tableData = data.map(item => {
-            // แปลงวันที่ให้อยู่ในรูปแบบที่อ่านง่าย
-            const runDate = new Date(item.rundate).toLocaleDateString('th-TH');
-            const createdAt = new Date(item.createdat).toLocaleDateString('th-TH', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-            
-            // ดึงข้อมูลผู้ใช้
-            const user = item.users || {};
-            const displayName = user.displayName || 'ไม่ระบุชื่อ';
-            
-            // สร้าง HTML สำหรับรูปภาพ
-            const thumbnailHtml = item.imageurl 
-                ? `<img src="${item.imageurl}" class="thumbnail" data-full="${item.imageurl}" alt="หลักฐานการวิ่ง">`
-                : 'ไม่มีรูปภาพ';
-            
-            // สร้าง HTML สำหรับปุ่มแก้ไขและลบ
-            const actionsHtml = `
-                <div class="action-buttons">
-                    <button class="btn-edit" data-id="${item.id}">แก้ไข</button>
-                    <button class="btn-delete" data-id="${item.id}">ลบ</button>
-                </div>
-            `;
-            
-            return [
-                item.id,
-                runDate,
-                displayName,
-                parseFloat(item.distance).toFixed(2),
-                parseFloat(item.duration).toFixed(2),
-                thumbnailHtml,
-                createdAt,
-                actionsHtml
-            ];
+function displayTable(data) {
+    // ซ่อนข้อความ loading
+    document.getElementById('loading').style.display = 'none';
+    
+    // สร้างข้อมูลสำหรับตาราง
+    const tableData = data.map(item => {
+        // แปลงวันที่ให้อยู่ในรูปแบบที่อ่านง่าย
+        const runDate = new Date(item.rundate).toLocaleDateString('th-TH');
+        const createdAt = new Date(item.createdat).toLocaleDateString('th-TH', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
         });
+        
+        // ดึงข้อมูลผู้ใช้ (ใช้ชื่อฟิลด์ที่ถูกต้อง)
+        const user = item.users || {};
+        const displayName = user.displayname || 'ไม่ระบุชื่อ';
+        
+        // สร้าง HTML สำหรับรูปภาพ
+        const thumbnailHtml = item.imageurl 
+            ? `<img src="${item.imageurl}" class="thumbnail" data-full="${item.imageurl}" alt="หลักฐานการวิ่ง">`
+            : 'ไม่มีรูปภาพ';
+        
+        // สร้าง HTML สำหรับปุ่มแก้ไขและลบ
+        const actionsHtml = `
+            <div class="action-buttons">
+                <button class="btn-edit" data-id="${item.id}">แก้ไข</button>
+                <button class="btn-delete" data-id="${item.id}">ลบ</button>
+            </div>
+        `;
+        
+        return [
+            item.id,
+            runDate,
+            displayName,
+            parseFloat(item.distance).toFixed(2),
+            parseFloat(item.duration).toFixed(2),
+            thumbnailHtml,
+            createdAt,
+            actionsHtml
+        ];
+    });
         
         // แสดงตาราง DataTable
         const table = $('#runsTable').DataTable({
