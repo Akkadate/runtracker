@@ -6,26 +6,54 @@ const supabase = require('../config/supabase');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
 
-// ファイルのアップロードとランニングデータの保存
+// แก้ไขไฟล์ runs.js ในฝั่ง backend
+// อัปเดตการรับข้อมูลจาก req.body และการตรวจสอบ
 router.post('/upload', async (req, res) => {
     try {
+        // Debug: ตรวจสอบข้อมูลที่ได้รับ
+        console.log('Request body:', req.body);
+        console.log('Request files:', req.files ? Object.keys(req.files) : 'No files');
+        
+        // ตรวจสอบไฟล์
         if (!req.files || !req.files.file) {
+            console.log('Error: No file uploaded');
             return res.status(400).json({ message: 'No file uploaded' });
         }
         
-        const { userId, runDate, distance, duration } = req.body;
+        // รับค่าข้อมูลจาก body แบบรองรับทั้งตัวพิมพ์เล็กและตัวพิมพ์ใหญ่
+        // ทำให้รองรับทั้งกรณีที่ frontend ส่งมาเป็น userId หรือ userid
+        const userId = req.body.userid || req.body.userId;
+        const runDate = req.body.rundate || req.body.runDate;
+        const distance = req.body.distance;
+        const duration = req.body.duration;
         
+        console.log('Extracted fields:', { userId, runDate, distance, duration });
+        
+        // ตรวจสอบข้อมูลที่จำเป็น
         if (!userId || !runDate || !distance || !duration) {
+            console.log('Error: Missing required fields', {
+                hasUserId: !!userId,
+                hasRunDate: !!runDate,
+                hasDistance: !!distance,
+                hasDuration: !!duration
+            });
             return res.status(400).json({ message: 'Missing required fields' });
         }
         
-        // ファイルのアップロード
+        // ดำเนินการต่อเมื่อมีข้อมูลครบ
         const file = req.files.file;
         const fileExt = path.extname(file.name);
         const fileName = `${uuidv4()}${fileExt}`;
         const filePath = `runs/${userId}/${fileName}`;
         
-        // Supabaseストレージにファイルをアップロード
+        console.log('File info:', {
+            fileName: file.name,
+            size: file.size,
+            mimeType: file.mimetype,
+            savePath: filePath
+        });
+        
+        // อัปโหลดไฟล์ไปยัง Supabase Storage
         const { data: uploadData, error: uploadError } = await supabase.storage
             .from('running-proofs')
             .upload(filePath, file.data, {
@@ -33,39 +61,49 @@ router.post('/upload', async (req, res) => {
                 cacheControl: '3600'
             });
         
-        if (uploadError) throw uploadError;
+        if (uploadError) {
+            console.error('Supabase storage upload error:', uploadError);
+            throw uploadError;
+        }
         
-        // アップロードされた画像の公開URLを取得
+        // ดึง URL สาธารณะของไฟล์ที่อัปโหลด
         const { data: urlData } = await supabase.storage
             .from('running-proofs')
             .getPublicUrl(filePath);
         
         const imageUrl = urlData.publicUrl;
+        console.log('Image URL:', imageUrl);
         
-        // ランニングデータをデータベースに保存
+        // บันทึกข้อมูลลงฐานข้อมูล
         const { data, error } = await supabase
             .from('runs')
             .insert([
                 {
-                    userid,
-                    rundate,
+                    userid: userId,  // ใช้ตัวพิมพ์เล็กตามโครงสร้างฐานข้อมูล
+                    rundate: runDate, // ใช้ตัวพิมพ์เล็กตามโครงสร้างฐานข้อมูล
                     distance: parseFloat(distance),
                     duration: parseFloat(duration),
-                    imageurl,
-                    createdat: new Date()
+                    imageurl: imageUrl, // ใช้ตัวพิมพ์เล็กตามโครงสร้างฐานข้อมูล
+                    createdat: new Date() // ใช้ตัวพิมพ์เล็กตามโครงสร้างฐานข้อมูล
                 }
             ])
             .select();
         
-        if (error) throw error;
+        if (error) {
+            console.error('Supabase insert error:', error);
+            throw error;
+        }
         
+        console.log('Run data saved successfully:', data[0]);
+        
+        // ส่งข้อมูลกลับไปยัง client
         res.status(201).json({
             message: 'Run data saved successfully',
             run: data[0],
-            imageUrl
+            imageurl: imageUrl
         });
     } catch (error) {
-        console.error('Error uploading run data:', error);
+        console.error('Error handling upload:', error);
         res.status(500).json({ message: 'Failed to upload run data', error: error.message });
     }
 });
