@@ -205,7 +205,7 @@ $(document).ready(function() {
         const table = $('#runsTable').DataTable({
             data: tableData,
             columns: [
-                { title: 'ชื่อผู้ใช้' },
+                { title: 'ชื่อนักวิ่ง' },
                 { title: 'เบอร์โทรศัพท์' },
                 { title: 'วันที่วิ่ง' },
                 { title: 'ระยะทาง (กม.)' },
@@ -334,7 +334,7 @@ function displayRankingTable(data) {
         data: tableData,
         columns: [
             { title: 'อันดับ' },
-            { title: 'ชื่อผู้ใช้' },
+            { title: 'ชื่อนักวิ่ง' },
             { title: 'รูปโปรไฟล์', orderable: false },
             { title: 'ระยะทางรวม (กม.)' },
             { title: 'จำนวนครั้ง' },
@@ -373,7 +373,7 @@ function exportRunsToExcel() {
         const phoneNumber = item.userDetails?.phonenumber || '-';
         
         return {
-            'ชื่อผู้ใช้': displayName,
+            'ชื่อนักวิ่ง': displayName,
             'เบอร์โทรศัพท์': phoneNumber,
             'วันที่วิ่ง': runDate,
             'ระยะทาง (กม.)': parseFloat(item.distance).toFixed(2),
@@ -406,7 +406,7 @@ function exportRankingToExcel() {
         const row = data[i];
         excelData.push({
             'อันดับ': row[0],
-            'ชื่อผู้ใช้': row[1],
+            'ชื่อนักวิ่ง': row[1],
             'ระยะทางรวม (กม.)': row[3],
             'จำนวนครั้ง': row[4],
             'ระยะทางเฉลี่ย/ครั้ง': row[5]
