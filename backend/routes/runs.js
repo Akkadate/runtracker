@@ -6,41 +6,64 @@ const supabase = require('../config/supabase');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
 
-// แก้ไขไฟล์ runs.js ในฝั่ง backend
-// อัปเดตการรับข้อมูลจาก req.body และการตรวจสอบ
+// backend/routes/runs.js
+// แก้ไขส่วนตรวจสอบข้อมูลและการอัปโหลดไฟล์
 router.post('/upload', async (req, res) => {
     try {
-        // Debug: ตรวจสอบข้อมูลที่ได้รับ
+        // แสดงข้อมูลโดยละเอียดเพื่อการดีบัก
+        console.log('Request headers:', req.headers);
         console.log('Request body:', req.body);
-        console.log('Request files:', req.files ? Object.keys(req.files) : 'No files');
+        console.log('Request files:', req.files);
         
-        // ตรวจสอบไฟล์
-        if (!req.files || !req.files.file) {
-            console.log('Error: No file uploaded');
-            return res.status(400).json({ message: 'No file uploaded' });
+        // ตรวจสอบไฟล์ด้วยวิธีที่ละเอียดขึ้น
+        if (!req.files) {
+            console.log('Error: req.files is undefined or null');
+            return res.status(400).json({ 
+                message: 'Missing required fields', 
+                details: 'req.files is missing' 
+            });
         }
         
-        // รับค่าข้อมูลจาก body แบบรองรับทั้งตัวพิมพ์เล็กและตัวพิมพ์ใหญ่
-        // ทำให้รองรับทั้งกรณีที่ frontend ส่งมาเป็น userId หรือ userid
-        const userId = req.body.userid || req.body.userId;
-        const runDate = req.body.rundate || req.body.runDate;
-        const distance = req.body.distance;
-        const duration = req.body.duration;
+        // ตรวจสอบว่า file อยู่ใน req.files หรือไม่
+        if (!req.files.file) {
+            console.log('Error: req.files.file is undefined or null');
+            console.log('Available files fields:', Object.keys(req.files));
+            return res.status(400).json({ 
+                message: 'Missing required fields', 
+                details: 'file field is missing',
+                availableFields: Object.keys(req.files)
+            });
+        }
+        
+        // รับค่าจาก body และตรวจสอบให้ละเอียด
+        // ยอมรับทั้งตัวพิมพ์เล็กและตัวพิมพ์ใหญ่
+        const userId = req.body.userid || req.body.userId || '';
+        const runDate = req.body.rundate || req.body.runDate || '';
+        const distance = req.body.distance || '';
+        const duration = req.body.duration || '';
         
         console.log('Extracted fields:', { userId, runDate, distance, duration });
         
-        // ตรวจสอบข้อมูลที่จำเป็น
+        // ตรวจสอบข้อมูลทีละฟิลด์และแสดงรายละเอียด
+        const fieldStatus = {
+            userId: !!userId,
+            runDate: !!runDate,
+            distance: !!distance,
+            duration: !!duration,
+            file: !!req.files.file
+        };
+        
+        // ตรวจสอบว่ามีฟิลด์ไหนขาดหายไป
         if (!userId || !runDate || !distance || !duration) {
-            console.log('Error: Missing required fields', {
-                hasUserId: !!userId,
-                hasRunDate: !!runDate,
-                hasDistance: !!distance,
-                hasDuration: !!duration
+            console.log('Error: Missing field(s)', fieldStatus);
+            return res.status(400).json({ 
+                message: 'Missing required fields', 
+                details: 'One or more required fields are missing',
+                fieldStatus: fieldStatus
             });
-            return res.status(400).json({ message: 'Missing required fields' });
         }
         
-        // ดำเนินการต่อเมื่อมีข้อมูลครบ
+        // ข้อมูลครบถ้วน ดำเนินการต่อ
         const file = req.files.file;
         const fileExt = path.extname(file.name);
         const fileName = `${uuidv4()}${fileExt}`;
@@ -79,12 +102,12 @@ router.post('/upload', async (req, res) => {
             .from('runs')
             .insert([
                 {
-                    userid: userId,  // ใช้ตัวพิมพ์เล็กตามโครงสร้างฐานข้อมูล
-                    rundate: runDate, // ใช้ตัวพิมพ์เล็กตามโครงสร้างฐานข้อมูล
+                    userid: userId,
+                    rundate: runDate,
                     distance: parseFloat(distance),
                     duration: parseFloat(duration),
-                    imageurl: imageUrl, // ใช้ตัวพิมพ์เล็กตามโครงสร้างฐานข้อมูล
-                    createdat: new Date() // ใช้ตัวพิมพ์เล็กตามโครงสร้างฐานข้อมูล
+                    imageurl: imageUrl,
+                    createdat: new Date()
                 }
             ])
             .select();
