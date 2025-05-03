@@ -1,4 +1,4 @@
-// Simplified submit-run.js for troubleshooting
+// Simplified submit-run.js with lowercase field names
 document.addEventListener('DOMContentLoaded', function() {
     console.log("DOM Content Loaded - Initializing simplified submit-run.js");
     
@@ -119,16 +119,16 @@ async function handleSubmit() {
         const formData = new FormData();
         formData.append('file', proofImage);
         
-        // ส่งชื่อฟิลด์ตามที่ API คาดหวัง - camelCase ตามที่กำหนดใน runs.js
-        formData.append('userId', userId);    // ใช้ตัว I ใหญ่ตามที่ API คาดหวัง
-        formData.append('runDate', rundate);  // ใช้ตัว D ใหญ่ตามที่ API คาดหวัง
+        // ใช้ชื่อฟิลด์เป็นตัวพิมพ์เล็กทั้งหมดตามโครงสร้างฐานข้อมูล
+        formData.append('userid', userId);     // ตัวพิมพ์เล็ก
+        formData.append('rundate', rundate);   // ตัวพิมพ์เล็ก
         formData.append('distance', distance);
         formData.append('duration', duration);
         
         // แสดงข้อมูลที่จะส่ง
         showDebug(`ข้อมูลที่ส่ง: 
-        - userId: ${userId} 
-        - runDate: ${rundate} 
+        - userid: ${userId} 
+        - rundate: ${rundate} 
         - distance: ${distance} 
         - duration: ${duration}
         - file: ${proofImage.name} (${proofImage.size} bytes)`);
