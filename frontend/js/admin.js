@@ -140,47 +140,39 @@ function displayTable(data) {
     setupEventListeners();
 }
     
-   // แก้ไขฟังก์ชันเพิ่ม event listeners
+ // แก้ไขใน setupEventListeners function
 function setupEventListeners() {
-    // รูปภาพ
-    document.querySelectorAll('.thumbnail').forEach(img => {
-        img.addEventListener('click', function() {
-            const fullImageUrl = this.getAttribute('data-full');
-            showImageModal(fullImageUrl);
-        });
+    // รูปภาพ - ใช้ event delegation
+    $(document).on('click', '.thumbnail', function() {
+        const fullImageUrl = $(this).data('full');
+        showImageModal(fullImageUrl);
     });
     
-    // ปุ่มแก้ไข
-    document.querySelectorAll('.btn-edit').forEach(button => {
-        button.addEventListener('click', function() {
-            const id = this.getAttribute('data-id');
-            showEditModal(id);
-        });
+    // ปุ่มแก้ไข - ใช้ event delegation
+    $(document).on('click', '.btn-edit', function() {
+        const id = $(this).data('id');
+        showEditModal(id);
     });
     
-    // ปุ่มลบ
-    document.querySelectorAll('.btn-delete').forEach(button => {
-        button.addEventListener('click', function() {
-            const id = this.getAttribute('data-id');
-            showDeleteModal(id);
-        });
+    // ปุ่มลบ - ใช้ event delegation
+    $(document).on('click', '.btn-delete', function() {
+        const id = $(this).data('id');
+        showDeleteModal(id);
     });
     
     // ปุ่มปิด modals
-    document.querySelectorAll('.close, #cancelEdit, #closeImage, #cancelDelete').forEach(element => {
-        element.addEventListener('click', function() {
-            closeAllModals();
-        });
+    $('.close, #cancelEdit, #closeImage, #cancelDelete').click(function() {
+        closeAllModals();
     });
     
     // ฟอร์มแก้ไข
-    document.getElementById('editForm').addEventListener('submit', function(e) {
+    $('#editForm').submit(function(e) {
         e.preventDefault();
         updateRunData();
     });
     
     // ปุ่มยืนยันการลบ
-    document.getElementById('confirmDelete').addEventListener('click', deleteRunData);
+    $('#confirmDelete').click(deleteRunData);
 }
 
    // แก้ไขฟังก์ชันแสดง Modal รูปภาพ
