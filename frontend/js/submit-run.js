@@ -162,13 +162,7 @@ async function handleSubmit() {
             document.getElementById('runForm').classList.add('hidden');
             document.getElementById('successMessage').classList.remove('hidden');
             
-            // Store data for sharing
-            window.currentRunData = {
-                rundate: rundate,
-                distance: distance,
-                duration: duration,
-                imageurl: result.imageurl || result.imageUrl || (result.run ? result.run.imageurl : null) || 'https://example.com/placeholder.jpg'
-            };
+           
             
             // Setup share button
             const shareButton = document.getElementById('shareButton');
