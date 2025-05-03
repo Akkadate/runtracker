@@ -1,8 +1,8 @@
-// Simplified submit-run.js with lowercase field names
+// แก้ไขไฟล์ submit-run.js เพื่อให้สามารถส่งข้อมูลการวิ่งได้สำเร็จ
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("DOM Content Loaded - Initializing simplified submit-run.js");
+    console.log("DOM Content Loaded - Initializing submit-run.js");
     
-    // Add click handler to the submit button
+    // เพิ่ม event listener สำหรับปุ่มบันทึก
     const submitButton = document.getElementById('submitButton');
     if (submitButton) {
         console.log("Submit button found, adding click handler");
@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.error("Submit button with ID 'submitButton' not found!");
     }
     
-    // Add change handler for file input
+    // เพิ่ม event listener สำหรับการเลือกไฟล์
     const fileInput = document.getElementById('proofImage');
     if (fileInput) {
         console.log("File input found, adding change handler");
@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.error("File input with ID 'proofImage' not found!");
     }
     
-    // Add click handler for retry button
+    // เพิ่ม event listener สำหรับปุ่มลองใหม่
     const retryButton = document.getElementById('retryButton');
     if (retryButton) {
         retryButton.addEventListener('click', function() {
@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Initialize default date
+    // กำหนดวันที่เริ่มต้นเป็นวันปัจจุบัน
     const rundateInput = document.getElementById('rundate');
     if (rundateInput) {
         const today = new Date().toISOString().split('T')[0];
@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log("Initialization complete");
 });
 
-// Handle file selection for preview
+// จัดการการเลือกไฟล์และแสดงตัวอย่าง
 function handleFileChange(event) {
     console.log("File input changed");
     const file = event.target.files[0];
@@ -58,6 +58,7 @@ function handleFileChange(event) {
     }
 }
 
+// แก้ไขฟังก์ชันส่งข้อมูล
 async function handleSubmit() {
     console.log("Submit button clicked");
     
@@ -191,7 +192,7 @@ async function handleSubmit() {
     }
 }
 
-// Share run result to LINE
+// แชร์ผลการวิ่งไปยัง LINE
 function shareRunResult() {
     if (!window.currentRunData) {
         console.error('No run data available for sharing');
@@ -200,17 +201,17 @@ function shareRunResult() {
     
     console.log('Sharing run result:', window.currentRunData);
     
-    // Format date
+    // จัดรูปแบบวันที่
     const runDate = new Date(window.currentRunData.rundate).toLocaleDateString('th-TH', {
         year: 'numeric',
         month: 'long',
         day: 'numeric'
     });
     
-    // Create message
+    // สร้างข้อความ
     const message = `🏃 บันทึกการวิ่งของฉัน\n📅 วันที่: ${runDate}\n🏁 ระยะทาง: ${window.currentRunData.distance} กม.\n⏱️ เวลา: ${window.currentRunData.duration} นาที`;
     
-    // Share via LINE
+    // แชร์ผ่าน LINE
     if (liff.isApiAvailable('shareTargetPicker')) {
         const shareContent = [
             {
@@ -219,8 +220,8 @@ function shareRunResult() {
             }
         ];
         
-        // Add image if available
-        if (window.currentRunData.imageurl && window.currentRunData.imageurl !== 'https://example.com/placeholder.jpg') {
+        // เพิ่มรูปภาพถ้ามี
+        if (window.currentRunData.imageurl && window.currentRunData.imageurl !== '') {
             shareContent.push({
                 type: "image",
                 originalContentUrl: window.currentRunData.imageurl,
@@ -228,7 +229,7 @@ function shareRunResult() {
             });
         }
         
-        // Share content
+        // แชร์ข้อมูล
         liff.shareTargetPicker(shareContent)
             .then(function(res) {
                 if (res) {
@@ -244,15 +245,15 @@ function shareRunResult() {
     }
 }
 
-// Helper functions for showing errors and debug info
+// ฟังก์ชันช่วยสำหรับแสดงข้อผิดพลาด
 function showError(message) {
     console.error(message);
     alert(message);
 }
 
-// Create debug overlay
+// สร้าง debug overlay
 function createDebugOverlay() {
-    // Check if overlay already exists
+    // ตรวจสอบว่า overlay มีอยู่แล้วหรือไม่
     if (document.getElementById('debugOverlay')) {
         return;
     }
@@ -287,13 +288,14 @@ function createDebugOverlay() {
     document.body.appendChild(overlay);
 }
 
+// แสดงข้อมูล debug
 function showDebug(message) {
     console.log(message);
     
-    // Create overlay if it doesn't exist
+    // สร้าง overlay ถ้ายังไม่มี
     createDebugOverlay();
     
-    // Add message to overlay
+    // เพิ่มข้อความลงใน overlay
     const content = document.getElementById('debugContent');
     if (content) {
         const entry = document.createElement('div');
@@ -303,7 +305,7 @@ function showDebug(message) {
         entry.style.paddingBottom = '3px';
         content.appendChild(entry);
         
-        // Scroll to bottom
+        // เลื่อนไปยังข้อความล่าสุด
         content.scrollTop = content.scrollHeight;
     }
 }
