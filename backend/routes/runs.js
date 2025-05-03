@@ -1,78 +1,115 @@
 // backend/routes/runs.js
-// 走行データ関連のAPI
 const express = require('express');
 const router = express.Router();
 const supabase = require('../config/supabase');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
 
-// backend/routes/runs.js
-// แก้ไขส่วนตรวจสอบข้อมูลและการอัปโหลดไฟล์
+// เพิ่ม route สำหรับทดสอบ
+router.get('/test', (req, res) => {
+    res.json({ message: 'Runs API is working', time: new Date().toISOString() });
+});
+
+// แก้ไข route upload
 router.post('/upload', async (req, res) => {
     try {
         // แสดงข้อมูลโดยละเอียดเพื่อการดีบัก
-        console.log('Request headers:', req.headers);
-        console.log('Request body:', req.body);
-        console.log('Request files:', req.files);
+        console.log('Headers:', req.headers);
+        console.log('Content-Type:', req.headers['content-type']);
+        console.log('Body keys:', Object.keys(req.body || {}));
+        console.log('Body:', req.body);
+        console.log('Files exist:', !!req.files);
+        console.log('Files keys:', req.files ? Object.keys(req.files) : 'No files');
         
-        // ตรวจสอบไฟล์ด้วยวิธีที่ละเอียดขึ้น
+        // ตรวจสอบไฟล์อย่างละเอียด
         if (!req.files) {
-            console.log('Error: req.files is undefined or null');
+            console.log('Error: req.files is undefined');
             return res.status(400).json({ 
                 message: 'Missing required fields', 
-                details: 'req.files is missing' 
+                details: 'req.files is undefined - check express-fileupload middleware' 
             });
         }
         
-        // ตรวจสอบว่า file อยู่ใน req.files หรือไม่
+        // ตรวจสอบ req.files.file
         if (!req.files.file) {
-            console.log('Error: req.files.file is undefined or null');
-            console.log('Available files fields:', Object.keys(req.files));
+            console.log('Error: req.files.file is undefined. Available keys:', Object.keys(req.files));
             return res.status(400).json({ 
                 message: 'Missing required fields', 
-                details: 'file field is missing',
-                availableFields: Object.keys(req.files)
+                details: 'file field is missing in the request',
+                availableFields: Object.keys(req.files) 
             });
         }
         
-        // รับค่าจาก body และตรวจสอบให้ละเอียด
-        // ยอมรับทั้งตัวพิมพ์เล็กและตัวพิมพ์ใหญ่
-        const userId = req.body.userid || req.body.userId || '';
-        const runDate = req.body.rundate || req.body.runDate || '';
-        const distance = req.body.distance || '';
-        const duration = req.body.duration || '';
+        // ตรวจสอบ req.body
+        if (!req.body) {
+            console.log('Error: req.body is undefined');
+            return res.status(400).json({ 
+                message: 'Missing required fields', 
+                details: 'req.body is undefined - check body-parser middleware' 
+            });
+        }
         
-        console.log('Extracted fields:', { userId, runDate, distance, duration });
+        // รับค่าและตรวจสอบแต่ละฟิลด์
+        const userId = req.body.userid || req.body.userId;
+        const runDate = req.body.rundate || req.body.runDate;
+        const distance = req.body.distance;
+        const duration = req.body.duration;
         
-        // ตรวจสอบข้อมูลทีละฟิลด์และแสดงรายละเอียด
+        console.log('Extracted fields:', { 
+            userId, 
+            runDate, 
+            distance, 
+            duration,
+            file: req.files.file ? req.files.file.name : 'undefined' 
+        });
+        
+        // ตรวจสอบแต่ละฟิลด์โดยละเอียด
         const fieldStatus = {
-            userId: !!userId,
-            runDate: !!runDate,
-            distance: !!distance,
-            duration: !!duration,
-            file: !!req.files.file
+            userId: { exists: !!userId, value: userId },
+            runDate: { exists: !!runDate, value: runDate },
+            distance: { exists: !!distance, value: distance },
+            duration: { exists: !!duration, value: duration },
+            file: { exists: !!req.files.file, name: req.files.file ? req.files.file.name : null }
         };
         
-        // ตรวจสอบว่ามีฟิลด์ไหนขาดหายไป
         if (!userId || !runDate || !distance || !duration) {
             console.log('Error: Missing field(s)', fieldStatus);
             return res.status(400).json({ 
                 message: 'Missing required fields', 
                 details: 'One or more required fields are missing',
-                fieldStatus: fieldStatus
+                fieldStatus 
             });
         }
         
-        // ข้อมูลครบถ้วน ดำเนินการต่อ
+        // ทดสอบส่งกลับข้อมูลเบื้องต้น - เพื่อดูว่ารับข้อมูลได้หรือไม่
+        // เอาออกหลังจากทดสอบเสร็จ
+        if (process.env.NODE_ENV === 'development') {
+            return res.status(200).json({
+                message: 'Data received successfully (test mode)',
+                data: {
+                    userId,
+                    runDate,
+                    distance,
+                    duration,
+                    file: {
+                        name: req.files.file.name,
+                        size: req.files.file.size,
+                        mimetype: req.files.file.mimetype
+                    }
+                }
+            });
+        }
+        
+        // ดำเนินการเมื่อข้อมูลครบถ้วน
         const file = req.files.file;
         const fileExt = path.extname(file.name);
         const fileName = `${uuidv4()}${fileExt}`;
         const filePath = `runs/${userId}/${fileName}`;
         
         console.log('File info:', {
-            fileName: file.name,
+            originalName: file.name,
             size: file.size,
-            mimeType: file.mimetype,
+            mimetype: file.mimetype,
             savePath: filePath
         });
         
@@ -127,7 +164,11 @@ router.post('/upload', async (req, res) => {
         });
     } catch (error) {
         console.error('Error handling upload:', error);
-        res.status(500).json({ message: 'Failed to upload run data', error: error.message });
+        res.status(500).json({ 
+            message: 'Failed to upload run data', 
+            error: error.message,
+            stack: error.stack
+        });
     }
 });
 
