@@ -8,6 +8,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;700&display=swap" rel="stylesheet">
     <!-- เพิ่ม DataTables CSS -->
     <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css">
+    <!-- เพิ่มใน <head> ไฟล์ admin.html -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <style>
          .container {
         max-width: 1200px; /* เพิ่มความกว้างจาก 600px เป็น 1200px */
@@ -26,7 +29,30 @@
         border-radius: 10px;
         box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
-    
+
+        /* เพิ่มใน <style> ในไฟล์ admin.html */
+.profile-thumbnail {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.no-profile {
+    width: 40px;
+    height: 40px;
+    background-color: #ddd;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: #666;
+}
+
+.ranking-section {
+    margin-top: 50px;
+}
     .login-container h2 {
         text-align: center;
         margin-bottom: 20px;
@@ -182,6 +208,29 @@
             margin-bottom: 15px;
         }
 
+        /* เพิ่มใน <style> ไฟล์ admin.html */
+.table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.export-btn {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.export-btn:hover {
+    background-color: #218838;
+}
          /* เพิ่มสไตล์สำหรับ modal แสดงรูปภาพขยาย */
         .image-preview-large {
             max-width: 100%;
@@ -255,6 +304,9 @@
             <!-- ตารางข้อมูลการวิ่ง -->
             <div class="table-container">
                 <h2>รายการวิ่งทั้งหมด</h2>
+                <button id="exportRunsExcel" class="export-btn">
+                    <i class="fas fa-file-excel"></i> ส่งออกเป็น Excel
+                  </button>
                 <div class="loading" id="loading">กำลังโหลดข้อมูล...</div>
                 <table id="runsTable" class="display" style="width:100%; display: none;">
                     <thead>
@@ -279,6 +331,9 @@
 <!-- เพิ่มหลังจากส่วนตารางข้อมูลการวิ่ง และก่อนส่วน Modal -->
 <div class="table-container ranking-section">
     <h2>อันดับนักวิ่ง</h2>
+    <button id="exportRankingExcel" class="export-btn">
+        <i class="fas fa-file-excel"></i> ส่งออกเป็น Excel
+    </button>
     <div class="loading" id="rankingLoading">กำลังโหลดข้อมูลอันดับ...</div>
     <table id="rankingTable" class="display" style="width:100%; display: none;">
         <thead>
