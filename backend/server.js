@@ -10,6 +10,8 @@ const fs = require('fs');
 const userRoutes = require('./routes/users');
 const runRoutes = require('./routes/runs');
 
+const authRoutes = require('./routes/auth');
+
 const app = express();
 const PORT = process.env.PORT || 4900;
 
@@ -48,6 +50,8 @@ app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
 // เพิ่ม routes
 app.use('/api/users', userRoutes);
 app.use('/api/runs', runRoutes);
+
+app.use('/api/auth', authRoutes);
 
 // เพิ่ม route สำหรับทดสอบ
 app.get('/api/test', (req, res) => {
