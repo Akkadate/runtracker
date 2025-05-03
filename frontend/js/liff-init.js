@@ -95,8 +95,6 @@ async function apiRequest(endpoint, method = 'GET', data = null) {
     }
 }
 
-// ファイルアップロード用のヘルパー関数
-// ฟังก์ชันอัปโหลดไฟล์ที่แก้ไขใหม่
 async function uploadFile(endpoint, file, additionalData = {}) {
     try {
         const formData = new FormData();
@@ -124,6 +122,10 @@ async function uploadFile(endpoint, file, additionalData = {}) {
         console.log('Sending data to:', API_BASE_URL + endpoint);
         console.log('Headers:', headers);
         console.log('Form data keys:', Object.keys(additionalData));
+        console.log('File included:', formData.has('file') ? 'YES' : 'NO');
+        
+        // เพิ่ม log ตรงนี้เพื่อดูว่าไฟล์ถูกเพิ่มลงใน FormData หรือไม่
+        console.log('File in FormData:', formData.get('file') ? 'YES' : 'NO');
         
         const response = await fetch(API_BASE_URL + endpoint, {
             method: 'POST',
