@@ -137,55 +137,7 @@ async function loadUserStats(userId, client) {
     }
 }
 
-async function loadRankingData(userId, client) {
-    try {
-        // Get ranking data
-        const { data, error } = await client
-            .from('runner_rankings')
-            .select('*')
-            .order('totaldistance', { ascending: false });
-            
-        if (error) {
-            throw error;
-        }
-        
-        // Save ranking data globally
-        window.rankingData = data || [];
-        
-        // Generate table
-        const tableBody = document.getElementById('rankingTableBody');
-        if (!tableBody) return;
-        
-        tableBody.innerHTML = '';
-        
-        data.forEach((runner, index) => {
-            const row = document.createElement('tr');
-            
-            // Highlight current user
-            if (runner.userId === userId) {
-                row.classList.add('highlight');
-            }
-            
-            row.innerHTML = `
-                <td>${index + 1}</td>
-                <td>${runner.displayname || 'ไม่ระบุชื่อ'}</td>
-                <td>${runner.totaldistance.toFixed(2)}</td>
-            `;
-            
-            tableBody.appendChild(row);
-        });
-        
-        // Update user rank
-        const userRank = data.findIndex(item => item.userId === userId) + 1;
-        document.getElementById('currentRank').textContent = userRank > 0 ? userRank : '-';
-        
-        return data;
-    } catch (error) {
-        console.error("Error loading ranking data:", error);
-        showError("ไม่สามารถโหลดข้อมูลอันดับได้");
-        throw error;
-    }
-}
+
 
 // เพิ่มฟังก์ชันสำหรับสร้างกราฟแท่งแสดงระยะทางแต่ละครั้ง
 function renderDistancePerRunChart(runData) {
