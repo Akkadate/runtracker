@@ -7,24 +7,22 @@
     <link rel="stylesheet" href="css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
-        /* เพิ่ม CSS สำหรับแสดงสถานะการอัปโหลด */
-        .upload-status {
-            margin-top: 10px;
+        /* เพิ่ม CSS สำหรับดีบัก */
+        #debugOverlay {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            width: 300px;
+            max-height: 80vh;
+            overflow-y: auto;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: #fff;
             padding: 10px;
             border-radius: 5px;
+            z-index: 9999;
+            font-size: 12px;
+            font-family: monospace;
             display: none;
-        }
-        
-        .upload-status.success {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        
-        .upload-status.error {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
         }
         
         /* ปรับแต่งหน้า imagePreview */
@@ -40,6 +38,17 @@
             max-height: 200px;
             border-radius: 8px;
             border: 1px solid #ddd;
+        }
+        
+        /* สถานะการอัปโหลด */
+        .upload-status {
+            margin-top: 10px;
+            padding: 8px;
+            border-radius: 4px;
+            color: #333;
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            display: none;
         }
     </style>
 </head>
@@ -58,8 +67,8 @@
         </div>
         
         <div id="runForm" class="form-container">
-            <!-- เพิ่ม method="POST" และ onsubmit="return false;" เพื่อป้องกัน form submission แบบปกติ -->
-            <form id="submitRunForm" method="POST" onsubmit="return false;">
+            <!-- ไม่ใช้ <form> เพื่อหลีกเลี่ยงปัญหา form submission -->
+            <div>
                 <div class="form-group">
                     <label for="rundate">วันที่วิ่ง:</label>
                     <input type="date" id="rundate" name="rundate" required>
@@ -79,7 +88,7 @@
                     <div id="uploadStatus" class="upload-status"></div>
                 </div>
                 <button type="button" id="submitButton" class="btn-primary">บันทึกข้อมูล</button>
-            </form>
+            </div>
         </div>
 
         <div id="successMessage" class="message-container hidden">
@@ -107,72 +116,29 @@
         </div>
     </div>
 
-    <!-- เพิ่ม Debug Panel สำหรับพัฒนา -->
-    <div id="debugPanel" style="margin-top: 20px; padding: 10px; background: #f5f5f5; border: 1px solid #ddd; display: none;">
-        <h3>Debug Panel</h3>
-        <div id="debugOutput" style="max-height: 200px; overflow: auto; font-family: monospace;"></div>
+    <!-- สร้างปุ่มสำหรับเปิด/ปิด debug overlay -->
+    <button id="toggleDebug" style="position: fixed; bottom: 10px; right: 10px; padding: 5px 10px; background: #333; color: white; border: none; border-radius: 4px; cursor: pointer;">Debug</button>
+    
+    <div id="debugOverlay">
+        <div style="font-weight: bold; margin-bottom: 5px; border-bottom: 1px solid #fff;">DEBUG INFO</div>
+        <div id="debugContent"></div>
     </div>
 
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script src="js/liff-init.js"></script>
+    
+    <!-- อย่าลืมเปลี่ยนเป็นไฟล์ที่แก้ไขแล้ว -->
     <script src="js/submit-run.js"></script>
     
-    <!-- เพิ่ม Script สำหรับการ Debug -->
     <script>
-        // ตรวจสอบว่าเป็นโหมด Development หรือไม่
-        const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-        
-        if (isDev) {
-            document.getElementById('debugPanel').style.display = 'block';
-            
-            // Override console.log เพื่อแสดงใน debugPanel
-            const oldConsoleLog = console.log;
-            console.log = function(...args) {
-                oldConsoleLog.apply(console, args);
-                
-                const output = document.getElementById('debugOutput');
-                const message = args.map(arg => {
-                    if (typeof arg === 'object') {
-                        return JSON.stringify(arg, null, 2);
-                    }
-                    return arg;
-                }).join(' ');
-                
-                const line = document.createElement('div');
-                line.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
-                output.appendChild(line);
-                
-                // Scroll to bottom
-                output.scrollTop = output.scrollHeight;
-            };
-            
-            // Override console.error
-            const oldConsoleError = console.error;
-            console.error = function(...args) {
-                oldConsoleError.apply(console, args);
-                
-                const output = document.getElementById('debugOutput');
-                const message = args.map(arg => {
-                    if (typeof arg === 'object') {
-                        return JSON.stringify(arg, null, 2);
-                    }
-                    return arg;
-                }).join(' ');
-                
-                const line = document.createElement('div');
-                line.textContent = `[${new Date().toLocaleTimeString()}] ERROR: ${message}`;
-                line.style.color = 'red';
-                output.appendChild(line);
-                
-                // Scroll to bottom
-                output.scrollTop = output.scrollHeight;
-            };
-        }
-        
-        // เพิ่ม Event Listener สำหรับปุ่มลองใหม่
-        document.getElementById('retryButton').addEventListener('click', function() {
-            document.getElementById('errorMessage').classList.add('hidden');
-            document.getElementById('runForm').classList.remove('hidden');
+        // เพิ่มการควบคุม Debug Overlay
+        document.getElementById('toggleDebug').addEventListener('click', function() {
+            const debugOverlay = document.getElementById('debugOverlay');
+            if (debugOverlay.style.display === 'none' || !debugOverlay.style.display) {
+                debugOverlay.style.display = 'block';
+            } else {
+                debugOverlay.style.display = 'none';
+            }
         });
     </script>
 </body>
