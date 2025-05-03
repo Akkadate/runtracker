@@ -294,7 +294,7 @@ async function loadRankingData() {
     }
 }
 
-// เพิ่มฟังก์ชันแสดงตารางอันดับ
+// แก้ไขฟังก์ชัน displayRankingTable ให้ทำงานกับข้อมูลที่ได้รับจาก runner_rankings view
 function displayRankingTable(data) {
     // ซ่อนข้อความ loading
     document.getElementById('rankingLoading').style.display = 'none';
@@ -302,21 +302,21 @@ function displayRankingTable(data) {
     // สร้างข้อมูลสำหรับตาราง
     const tableData = data.map((item, index) => {
         // สร้าง HTML สำหรับรูปโปรไฟล์
-        const profileImageHtml = item.pictureUrl 
-            ? `<img src="${item.pictureUrl}" class="profile-thumbnail" alt="${item.displayName}">`
+        const profileImageHtml = item.pictureurl 
+            ? `<img src="${item.pictureurl}" class="profile-thumbnail" alt="${item.displayname}">`
             : '<div class="no-profile">ไม่มีรูป</div>';
         
         // คำนวณระยะทางเฉลี่ยต่อครั้ง
-        const avgDistance = item.totalRuns > 0 
-            ? (item.totalDistance / item.totalRuns).toFixed(2)
+        const avgDistance = item.totalruns > 0 
+            ? (item.totaldistance / item.totalruns).toFixed(2)
             : '0.00';
         
         return [
             index + 1, // อันดับ
-            item.displayName || 'ไม่ระบุชื่อ',
+            item.displayname || 'ไม่ระบุชื่อ',
             profileImageHtml,
-            parseFloat(item.totalDistance).toFixed(2),
-            item.totalRuns,
+            parseFloat(item.totaldistance).toFixed(2),
+            item.totalruns,
             avgDistance
         ];
     });
@@ -394,7 +394,7 @@ function exportRunsToExcel() {
     XLSX.writeFile(wb, "รายการวิ่ง_" + new Date().toISOString().split('T')[0] + ".xlsx");
 }
 
-// เพิ่มฟังก์ชัน Export อันดับนักวิ่งเป็น Excel
+// แก้ไขฟังก์ชัน exportRankingToExcel ให้ทำงานกับข้อมูลที่ได้รับจาก runner_rankings view
 function exportRankingToExcel() {
     // ดึงข้อมูลจากตาราง
     const dataTable = $('#rankingTable').DataTable();
