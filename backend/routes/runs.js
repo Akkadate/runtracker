@@ -286,17 +286,15 @@ router.put('/admin/:id', async (req, res) => {
         const { id } = req.params;
         const { rundate, distance, duration } = req.body;
         
-        // ตรวจสอบค่าที่รับมา
-        console.log('Update run data:', { id, rundate, distance, duration });
+        console.log('Updating run data:', { id, rundate, distance, duration });
         
         // อัปเดตข้อมูล
         const { data, error } = await supabase
             .from('runs')
             .update({
-                rundate: rundate,
+                rundate,
                 distance: parseFloat(distance),
-                duration: parseFloat(duration),
-                // ไม่ต้องอัปเดต updatedat เพราะฐานข้อมูลนี้ไม่มีคอลัมน์นี้
+                duration: parseFloat(duration)
             })
             .eq('id', id)
             .select();
@@ -306,6 +304,7 @@ router.put('/admin/:id', async (req, res) => {
             throw error;
         }
         
+        console.log('Update successful:', data);
         res.json({ message: 'Run data updated successfully', run: data[0] });
     } catch (error) {
         console.error('Error updating run data:', error);
@@ -318,54 +317,17 @@ router.delete('/admin/:id', async (req, res) => {
     try {
         const { id } = req.params;
         
-        // ดึงข้อมูลรูปภาพเพื่อลบจาก storage
-        const { data: runData, error: fetchError } = await supabase
-            .from('runs')
-            .select('imageurl')
-            .eq('id', id)
-            .single();
-        
-        if (fetchError) {
-            console.error('Error fetching run data for deletion:', fetchError);
-            throw fetchError;
-        }
+        console.log('Deleting run data:', id);
         
         // ลบข้อมูลจากตาราง
-        const { error: deleteError } = await supabase
+        const { error } = await supabase
             .from('runs')
             .delete()
             .eq('id', id);
         
-        if (deleteError) {
-            console.error('Error deleting run data:', deleteError);
-            throw deleteError;
-        }
-        
-        // ลบไฟล์รูปภาพจาก storage (optional)
-        if (runData && runData.imageurl) {
-            try {
-                // ได้ URL เต็ม เช่น https://jmmtbikvvuyzbhosplli.supabase.co/storage/v1/object/public/running-proofs/runs/user123/image.jpg
-                // ต้องแยกเป็นเฉพาะส่วน path เช่น runs/user123/image.jpg
-                const imageUrl = runData.imageurl;
-                const pathRegex = /\/running-proofs\/(.+)$/;
-                const matches = imageUrl.match(pathRegex);
-                
-                if (matches && matches[1]) {
-                    const imagePath = matches[1];
-                    console.log('Deleting image from storage:', imagePath);
-                    
-                    const { error: storageError } = await supabase.storage
-                        .from('running-proofs')
-                        .remove([imagePath]);
-                    
-                    if (storageError) {
-                        console.warn('Warning: Could not delete storage file:', storageError);
-                    }
-                }
-            } catch (storageError) {
-                console.warn('Error deleting image from storage:', storageError);
-                // ไม่ throw error เพราะถือว่าการลบข้อมูลสำเร็จแล้ว
-            }
+        if (error) {
+            console.error('Error deleting run data:', error);
+            throw error;
         }
         
         res.json({ message: 'Run data deleted successfully' });
