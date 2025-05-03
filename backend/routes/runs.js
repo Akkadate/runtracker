@@ -5,7 +5,7 @@ const supabase = require('../config/supabase');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
 // ในไฟล์ backend/routes/runs.js
-const authMiddleware = require('../middleware/auth');
+//const authMiddleware = require('../middleware/auth');
 
 // เพิ่ม route สำหรับทดสอบ
 router.get('/test', (req, res) => {
@@ -229,7 +229,7 @@ router.get('/ranking', async (req, res) => {
     }
 });
 // ดึงรายการวิ่งทั้งหมด (สำหรับ admin)
-router.get('/admin/all', authMiddleware, async (req, res) => {
+router.get('/admin/all', async (req, res) => {
     try {
         // ใช้ชื่อคอลัมน์ที่ถูกต้อง (ตัวพิมพ์เล็กทั้งหมด)
         const { data: runsData, error: runsError } = await supabase
@@ -259,7 +259,7 @@ router.get('/admin/all', authMiddleware, async (req, res) => {
 });
 
 // อัปเดตข้อมูลการวิ่ง (admin)
-router.put('/admin/:id', authMiddleware, async (req, res) => {
+router.put('/admin/:id', async (req, res) => {
     try {
         const { id } = req.params;
         const { rundate, distance, duration } = req.body;
@@ -291,7 +291,7 @@ router.put('/admin/:id', authMiddleware, async (req, res) => {
 });
 
 // ลบข้อมูลการวิ่ง (admin)
-router.delete('/admin/:id', authMiddleware, async (req, res) => {
+router.delete('/admin/:id', async (req, res) => {
     try {
         const { id } = req.params;
         
