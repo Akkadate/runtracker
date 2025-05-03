@@ -58,7 +58,8 @@
         </div>
         
         <div id="runForm" class="form-container">
-            <form id="submitRunForm">
+            <!-- เพิ่ม method="POST" และ onsubmit="return false;" เพื่อป้องกัน form submission แบบปกติ -->
+            <form id="submitRunForm" method="POST" onsubmit="return false;">
                 <div class="form-group">
                     <label for="rundate">วันที่วิ่ง:</label>
                     <input type="date" id="rundate" name="rundate" required>
@@ -77,7 +78,7 @@
                     <div id="imagePreview" class="image-preview"></div>
                     <div id="uploadStatus" class="upload-status"></div>
                 </div>
-                <button type="submit" class="btn-primary">บันทึกข้อมูล</button>
+                <button type="button" id="submitButton" class="btn-primary">บันทึกข้อมูล</button>
             </form>
         </div>
 
