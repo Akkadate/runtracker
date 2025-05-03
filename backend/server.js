@@ -1,12 +1,11 @@
-// backend/server.js
-// ไฟล์หลักสำหรับ Express Server ที่รองรับ HTTPS
+// backend/server.js 
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const fileUpload = require('express-fileupload');
 const path = require('path');
-const https = require('https');  // เพิ่มโมดูล HTTPS
-const fs = require('fs');  // เพิ่มโมดูล fs สำหรับอ่านไฟล์ certificate
+const https = require('https');
+const fs = require('fs');
 
 const userRoutes = require('./routes/users');
 const runRoutes = require('./routes/runs');
@@ -14,36 +13,46 @@ const runRoutes = require('./routes/runs');
 const app = express();
 const PORT = process.env.PORT || 4900;
 
-// ค่า SSL options
+// SSL options
 const sslOptions = {
-    key: fs.readFileSync('/etc/letsencrypt/live/runtracker.devapp.cc/privkey.pem'),  // เปลี่ยนเป็นเส้นทางจริงของไฟล์ private key
-    cert: fs.readFileSync('/etc/letsencrypt/live/runtracker.devapp.cc/fullchain.pem')  // เปลี่ยนเป็นเส้นทางจริงของไฟล์ certificate
+    key: fs.readFileSync('/etc/letsencrypt/live/runtracker.devapp.cc/privkey.pem'),
+    cert: fs.readFileSync('/etc/letsencrypt/live/runtracker.devapp.cc/fullchain.pem')
 };
 
-// ミドルウェアの設定
+// สำคัญ: อัปเดตการตั้งค่า CORS
 app.use(cors({
-    origin: '*',  // อนุญาตทุกโดเมน หรือระบุเฉพาะโดเมนที่อนุญาต
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
 }));
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
 
+// ตั้งค่า fileUpload ใหม่ให้ละเอียดขึ้น
 app.use(fileUpload({
     createParentPath: true,
+    useTempFiles: false,
+    debug: true, // เปิด debug mode
     limits: { 
-        fileSize: 10 * 1024 * 1024 // 10MB
+        fileSize: 10 * 1024 * 1024, // 10MB
     },
+    abortOnLimit: true,
+    responseOnLimit: 'File size limit has been reached',
+    safeFileNames: true,
+    preserveExtension: true
 }));
 
+// สำคัญ: ปรับการใช้งาน bodyParser
+app.use(bodyParser.json({ limit: '10mb' }));
+app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
 
-
-// 静的ファイルの提供
-app.use(express.static(path.join(__dirname, 'public')));
-
-// ルートの設定
+// เพิ่ม routes
 app.use('/api/users', userRoutes);
 app.use('/api/runs', runRoutes);
+
+// เพิ่ม route สำหรับทดสอบ
+app.get('/api/test', (req, res) => {
+    res.json({ message: 'API is working', time: new Date().toISOString() });
+});
 
 // สร้าง HTTPS server
 const httpsServer = https.createServer(sslOptions, app);
