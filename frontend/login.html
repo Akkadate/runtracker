@@ -118,27 +118,38 @@
             }
         }
         
-        function login() {
-            const username = $('#username').val();
-            const password = $('#password').val();
-            
-            // ตรวจสอบค่าว่าง
-            if (!username || !password) {
-                $('#errorMessage').text('กรุณากรอกชื่อผู้ใช้และรหัสผ่าน').show();
-                return;
-            }
-            
-            // ตรวจสอบชื่อผู้ใช้และรหัสผ่าน (แบบง่าย)
-            if (username === 'admin' && password === 'nbu2025') {
-                // บันทึก session
-                sessionStorage.setItem('adminLoggedIn', 'true');
-                
-                // redirect ไปยังหน้า admin
-                window.location.href = 'runmanagement.html';
-            } else {
-                $('#errorMessage').text('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง').show();
-            }
+       // ในไฟล์ login.js หรือตรงส่วน login ในไฟล์ admin.js
+function login() {
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    
+    // ส่งข้อมูลไปที่ server เพื่อตรวจสอบ
+    fetch('https://runtracker.devapp.cc/api/auth/login', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ username, password })
+    })
+    .then(response => {
+        if (response.ok) {
+            return response.json();
         }
+        throw new Error('รหัสผ่านไม่ถูกต้อง');
+    })
+    .then(data => {
+        // บันทึก token หรือ session
+        sessionStorage.setItem('adminToken', data.token);
+        sessionStorage.setItem('adminLoggedIn', 'true');
+        
+        // redirect ไปยังหน้า admin
+        window.location.href = 'runmanagement.html';
+    })
+    .catch(error => {
+        document.getElementById('errorMessage').textContent = error.message;
+        document.getElementById('errorMessage').style.display = 'block';
+    });
+}
     </script>
 </body>
 </html>
