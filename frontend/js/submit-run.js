@@ -118,12 +118,20 @@ async function handleSubmit() {
         // Create FormData
         const formData = new FormData();
         formData.append('file', proofImage);
-        formData.append('userid', userId);
-        formData.append('rundate', rundate);
+        
+        // ส่งชื่อฟิลด์ตามที่ API คาดหวัง - camelCase ตามที่กำหนดใน runs.js
+        formData.append('userId', userId);    // ใช้ตัว I ใหญ่ตามที่ API คาดหวัง
+        formData.append('runDate', rundate);  // ใช้ตัว D ใหญ่ตามที่ API คาดหวัง
         formData.append('distance', distance);
         formData.append('duration', duration);
         
-        showDebug("สร้าง FormData สำเร็จ กำลังส่งข้อมูลไปยัง API...");
+        // แสดงข้อมูลที่จะส่ง
+        showDebug(`ข้อมูลที่ส่ง: 
+        - userId: ${userId} 
+        - runDate: ${rundate} 
+        - distance: ${distance} 
+        - duration: ${duration}
+        - file: ${proofImage.name} (${proofImage.size} bytes)`);
         
         // Get access token
         let token = null;
