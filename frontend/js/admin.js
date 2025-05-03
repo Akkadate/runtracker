@@ -6,28 +6,50 @@ document.addEventListener('DOMContentLoaded', function() {
     // สถานะของข้อมูล
     let runsData = [];
     
-    // ฟังก์ชันโหลดข้อมูลทั้งหมด
-    async function loadData() {
-        try {
-            // โหลดข้อมูลการวิ่งทั้งหมด
-            const response = await fetch(`${API_BASE_URL}/api/runs/admin/all`);
-            
-            if (!response.ok) {
-                throw new Error(`Server responded with status: ${response.status}`);
-            }
-            
-            runsData = await response.json();
-            
-            // แสดงสถิติ
-            displayStats(runsData);
-            
-            // แสดงตารางข้อมูล
-            displayTable(runsData);
-        } catch (error) {
-            console.error('Error loading data:', error);
-            document.getElementById('loading').textContent = 'เกิดข้อผิดพลาดในการโหลดข้อมูล: ' + error.message;
+    // แก้ไขฟังก์ชันโหลดข้อมูล
+async function loadData() {
+    try {
+        // โหลดข้อมูลการวิ่งทั้งหมด
+        const response = await fetch(`${API_BASE_URL}/api/runs/admin/all`);
+        
+        if (!response.ok) {
+            throw new Error(`Server responded with status: ${response.status}`);
         }
+        
+        runsData = await response.json();
+        
+        // โหลดข้อมูลผู้ใช้เพิ่มเติม (เพื่อดึงเบอร์โทรศัพท์)
+        const userIds = [...new Set(runsData.map(item => item.userid))];
+        const userPromises = userIds.map(userId => 
+            fetch(`${API_BASE_URL}/api/users/${userId}`)
+                .then(res => res.ok ? res.json() : null)
+        );
+        
+        const usersData = await Promise.all(userPromises);
+        const usersMap = {};
+        usersData.forEach(user => {
+            if (user) {
+                usersMap[user.userid] = user;
+            }
+        });
+        
+        // เพิ่มข้อมูลผู้ใช้ลงในข้อมูลการวิ่ง
+        runsData = runsData.map(run => ({
+            ...run,
+            userDetails: usersMap[run.userid] || {}
+        }));
+        
+        // แสดงสถิติ
+        displayStats(runsData);
+        
+        // แสดงตารางข้อมูล
+        displayTable(runsData);
+    } catch (error) {
+        console.error('Error loading data:', error);
+        document.getElementById('loading').textContent = 'เกิดข้อผิดพลาดในการโหลดข้อมูล: ' + error.message;
     }
+}
+    
     
     // ฟังก์ชันคำนวณและแสดงสถิติ
     function displayStats(data) {
@@ -44,7 +66,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('avgDistance').textContent = avgDistance.toFixed(2);
     }
     
-    // ฟังก์ชันแสดงตารางข้อมูล
+ // แก้ไขฟังก์ชันแสดงตาราง
 function displayTable(data) {
     // ซ่อนข้อความ loading
     document.getElementById('loading').style.display = 'none';
@@ -61,9 +83,10 @@ function displayTable(data) {
             minute: '2-digit'
         });
         
-        // ดึงข้อมูลผู้ใช้ (ใช้ชื่อฟิลด์ที่ถูกต้อง)
+        // ดึงข้อมูลผู้ใช้
         const user = item.users || {};
         const displayName = user.displayname || 'ไม่ระบุชื่อ';
+        const phoneNumber = item.userDetails?.phonenumber || '-';
         
         // สร้าง HTML สำหรับรูปภาพ
         const thumbnailHtml = item.imageurl 
@@ -79,9 +102,9 @@ function displayTable(data) {
         `;
         
         return [
-            item.id,
-            runDate,
             displayName,
+            phoneNumber,
+            runDate,
             parseFloat(item.distance).toFixed(2),
             parseFloat(item.duration).toFixed(2),
             thumbnailHtml,
@@ -89,88 +112,85 @@ function displayTable(data) {
             actionsHtml
         ];
     });
-        
-        // แสดงตาราง DataTable
-        const table = $('#runsTable').DataTable({
-            data: tableData,
-            columns: [
-                { title: 'ID' },
-                { title: 'วันที่' },
-                { title: 'ชื่อผู้ใช้' },
-                { title: 'ระยะทาง (กม.)' },
-                { title: 'เวลา (นาที)' },
-                { title: 'รูปภาพ' },
-                { title: 'วันที่บันทึก' },
-                { title: 'จัดการ' }
-            ],
-            order: [[1, 'desc']], // เรียงตามวันที่จากใหม่ไปเก่า
-            language: {
-                url: '//cdn.datatables.net/plug-ins/1.11.5/i18n/th.json'
-            },
-            responsive: true
-        });
-        
-        // แสดงตาราง
-        document.getElementById('runsTable').style.display = 'table';
-        
-        // เพิ่ม event listeners สำหรับปุ่มและรูปภาพ
-        setupEventListeners();
-    }
     
-    // ฟังก์ชันเพิ่ม event listeners
-    function setupEventListeners() {
-        // รูปภาพ
-        document.querySelectorAll('.thumbnail').forEach(img => {
-            img.addEventListener('click', function() {
-                const fullImageUrl = this.getAttribute('data-full');
-                showImageModal(fullImageUrl);
-            });
-        });
-        
-        // ปุ่มแก้ไข
-        document.querySelectorAll('.btn-edit').forEach(button => {
-            button.addEventListener('click', function() {
-                const id = this.getAttribute('data-id');
-                showEditModal(id);
-            });
-        });
-        
-        // ปุ่มลบ
-        document.querySelectorAll('.btn-delete').forEach(button => {
-            button.addEventListener('click', function() {
-                const id = this.getAttribute('data-id');
-                showDeleteModal(id);
-            });
-        });
-        
-        // ปุ่มปิด modals
-        document.querySelectorAll('.close, #cancelEdit, #closeImage, #cancelDelete').forEach(element => {
-            element.addEventListener('click', function() {
-                closeAllModals();
-            });
-        });
-        
-        // ฟอร์มแก้ไข
-        document.getElementById('editForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            updateRunData();
-        });
-        
-        // ปุ่มยืนยันการลบ
-        document.getElementById('confirmDelete').addEventListener('click', deleteRunData);
-    }
+    // แสดงตาราง DataTable
+    const table = $('#runsTable').DataTable({
+        data: tableData,
+        columns: [
+            { title: 'ชื่อผู้ใช้' },
+            { title: 'เบอร์โทรศัพท์' },
+            { title: 'วันที่วิ่ง' },
+            { title: 'ระยะทาง (กม.)' },
+            { title: 'เวลา (นาที)' },
+            { title: 'รูปภาพ' },
+            { title: 'วันที่บันทึก' },
+            { title: 'จัดการ' }
+        ],
+        order: [[6, 'desc']], // เรียงตามวันที่บันทึกจากใหม่ไปเก่า
+        language: {
+            url: '//cdn.datatables.net/plug-ins/1.11.5/i18n/th.json'
+        },
+        responsive: true
+    });
     
-    // ฟังก์ชันแสดง Modal รูปภาพ
-    function showImageModal(imageUrl) {
-        // แสดงรูปภาพ
-        document.getElementById('largeImage').src = imageUrl;
-        
-        // แสดงข้อมูลเพิ่มเติม (ถ้ามี)
-        // document.getElementById('imageInfo').textContent = 'ข้อมูลเพิ่มเติม...';
-        
-        // แสดง modal
-        document.getElementById('imageModal').style.display = 'block';
-    }
+    // แสดงตาราง
+    document.getElementById('runsTable').style.display = 'table';
+    
+    // เพิ่ม event listeners สำหรับปุ่มและรูปภาพ
+    setupEventListeners();
+}
+    
+   // แก้ไขฟังก์ชันเพิ่ม event listeners
+function setupEventListeners() {
+    // รูปภาพ
+    document.querySelectorAll('.thumbnail').forEach(img => {
+        img.addEventListener('click', function() {
+            const fullImageUrl = this.getAttribute('data-full');
+            showImageModal(fullImageUrl);
+        });
+    });
+    
+    // ปุ่มแก้ไข
+    document.querySelectorAll('.btn-edit').forEach(button => {
+        button.addEventListener('click', function() {
+            const id = this.getAttribute('data-id');
+            showEditModal(id);
+        });
+    });
+    
+    // ปุ่มลบ
+    document.querySelectorAll('.btn-delete').forEach(button => {
+        button.addEventListener('click', function() {
+            const id = this.getAttribute('data-id');
+            showDeleteModal(id);
+        });
+    });
+    
+    // ปุ่มปิด modals
+    document.querySelectorAll('.close, #cancelEdit, #closeImage, #cancelDelete').forEach(element => {
+        element.addEventListener('click', function() {
+            closeAllModals();
+        });
+    });
+    
+    // ฟอร์มแก้ไข
+    document.getElementById('editForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        updateRunData();
+    });
+    
+    // ปุ่มยืนยันการลบ
+    document.getElementById('confirmDelete').addEventListener('click', deleteRunData);
+}
+
+   // แก้ไขฟังก์ชันแสดง Modal รูปภาพ
+function showImageModal(imageUrl) {
+    // แสดงรูปภาพ
+    document.getElementById('largeImage').src = imageUrl;
+    
+    // แสดง modal
+    document.getElementById('imageModal').style.display = 'block';
+}
     
     // ฟังก์ชันแสดง Modal แก้ไขข้อมูล
     function showEditModal(id) {
@@ -205,76 +225,88 @@ function displayTable(data) {
         });
     }
     
-    // ฟังก์ชันอัปเดตข้อมูล
-    async function updateRunData() {
-        try {
-            const id = document.getElementById('editId').value;
-            const rundate = document.getElementById('editRunDate').value;
-            const distance = document.getElementById('editDistance').value;
-            const duration = document.getElementById('editDuration').value;
-            
-            // ตรวจสอบข้อมูล
-            if (!rundate || !distance || !duration) {
-                alert('กรุณากรอกข้อมูลให้ครบถ้วน');
-                return;
-            }
-            
-            // ส่งข้อมูลไปยัง API
-            const response = await fetch(`${API_BASE_URL}/api/runs/admin/${id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    rundate,
-                    distance,
-                    duration
-                })
-            });
-            
-            if (!response.ok) {
-                throw new Error(`Server responded with status: ${response.status}`);
-            }
-            
-            const result = await response.json();
-            
-            // ปิด modal
-            closeAllModals();
-            
-            // โหลดข้อมูลใหม่
-            alert('อัปเดตข้อมูลสำเร็จ');
-            location.reload();
-        } catch (error) {
-            console.error('Error updating data:', error);
-            alert('เกิดข้อผิดพลาดในการอัปเดตข้อมูล: ' + error.message);
+   // ฟังก์ชันอัปเดตข้อมูล
+async function updateRunData() {
+    try {
+        const id = document.getElementById('editId').value;
+        const rundate = document.getElementById('editRunDate').value;
+        const distance = document.getElementById('editDistance').value;
+        const duration = document.getElementById('editDuration').value;
+        
+        // ตรวจสอบข้อมูล
+        if (!rundate || !distance || !duration) {
+            alert('กรุณากรอกข้อมูลให้ครบถ้วน');
+            return;
         }
-    }
-    
-    // ฟังก์ชันลบข้อมูล
-    async function deleteRunData() {
-        try {
-            const id = document.getElementById('deleteId').value;
-            
-            // ส่งคำสั่งลบไปยัง API
-            const response = await fetch(`${API_BASE_URL}/api/runs/admin/${id}`, {
-                method: 'DELETE'
-            });
-            
-            if (!response.ok) {
-                throw new Error(`Server responded with status: ${response.status}`);
-            }
-            
-            // ปิด modal
-            closeAllModals();
-            
-            // โหลดข้อมูลใหม่
-            alert('ลบข้อมูลสำเร็จ');
-            location.reload();
-        } catch (error) {
-            console.error('Error deleting data:', error);
-            alert('เกิดข้อผิดพลาดในการลบข้อมูล: ' + error.message);
+        
+        console.log('Updating run data:', { id, rundate, distance, duration });
+        
+        // ส่งข้อมูลไปยัง API
+        const response = await fetch(`${API_BASE_URL}/api/runs/admin/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                rundate,
+                distance,
+                duration
+            })
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Error response:', errorText);
+            throw new Error(`Server responded with status: ${response.status}`);
         }
+        
+        const result = await response.json();
+        console.log('Update result:', result);
+        
+        // ปิด modal
+        closeAllModals();
+        
+        // โหลดข้อมูลใหม่
+        alert('อัปเดตข้อมูลสำเร็จ');
+        location.reload();
+    } catch (error) {
+        console.error('Error updating data:', error);
+        alert('เกิดข้อผิดพลาดในการอัปเดตข้อมูล: ' + error.message);
     }
+}
+
+// ฟังก์ชันลบข้อมูล
+async function deleteRunData() {
+    try {
+        const id = document.getElementById('deleteId').value;
+        
+        console.log('Deleting run data:', id);
+        
+        // ส่งคำสั่งลบไปยัง API
+        const response = await fetch(`${API_BASE_URL}/api/runs/admin/${id}`, {
+            method: 'DELETE'
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Error response:', errorText);
+            throw new Error(`Server responded with status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        console.log('Delete result:', result);
+        
+        // ปิด modal
+        closeAllModals();
+        
+        // โหลดข้อมูลใหม่
+        alert('ลบข้อมูลสำเร็จ');
+        location.reload();
+    } catch (error) {
+        console.error('Error deleting data:', error);
+        alert('เกิดข้อผิดพลาดในการลบข้อมูล: ' + error.message);
+    }
+}
     
     // โหลดข้อมูลเมื่อหน้าเว็บโหลดเสร็จ
     loadData();
