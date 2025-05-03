@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - NBU Running Tracker</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- เพิ่ม DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css">
+    <style>
+        /* เพิ่มสไตล์เฉพาะสำหรับหน้า admin */
+        .admin-container {
+            padding: 20px;
+        }
+        
+        .stats-card {
+            background-color: #f9f9f9;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+        }
+        
+        .stat-box {
+            flex: 1;
+            min-width: 120px;
+            text-align: center;
+            padding: 10px;
+            border-right: 1px solid #eee;
+        }
+        
+        .stat-box:last-child {
+            border-right: none;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #06c755;
+        }
+        
+        .table-container {
+            margin-top: 30px;
+            overflow-x: auto;
+        }
+        
+        table.dataTable thead th {
+            background-color: #f2f2f2;
+            font-weight: 500;
+        }
+        
+        .thumbnail {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .btn-edit, .btn-delete {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        .btn-edit {
+            background-color: #4a90e2;
+            color: white;
+        }
+        
+        .btn-delete {
+            background-color: #e74c3c;
+            color: white;
+        }
+        
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        
+        .modal-content {
+            background-color: white;
+            margin: 10% auto;
+            padding: 20px;
+            border-radius: 10px;
+            width: 80%;
+            max-width: 500px;
+        }
+        
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .close:hover {
+            color: black;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .image-preview-large {
+            max-width: 100%;
+            max-height: 400px;
+            margin: 0 auto;
+            display: block;
+        }
+        
+        .modal-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .stats-card {
+                flex-direction: column;
+            }
+            
+            .stat-box {
+                border-right: none;
+                border-bottom: 1px solid #eee;
+                padding: 15px 0;
+            }
+            
+            .stat-box:last-child {
+                border-bottom: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Admin Dashboard - NBU Running Tracker</h1>
+        </div>
+        
+        <div class="admin-container">
+            <!-- สถิติภาพรวม -->
+            <div class="stats-card">
+                <div class="stat-box">
+                    <div class="stat-label">ผู้ใช้ทั้งหมด</div>
+                    <div class="stat-value" id="totalUsers">0</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">จำนวนการวิ่ง</div>
+                    <div class="stat-value" id="totalRuns">0</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">ระยะทางรวม</div>
+                    <div class="stat-value" id="totalDistance">0</div>
+                    <div class="stat-unit">กม.</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">เฉลี่ยต่อครั้ง</div>
+                    <div class="stat-value" id="avgDistance">0</div>
+                    <div class="stat-unit">กม.</div>
+                </div>
+            </div>
+            
+            <!-- ตารางข้อมูลการวิ่ง -->
+            <div class="table-container">
+                <h2>รายการวิ่งทั้งหมด</h2>
+                <div class="loading" id="loading">กำลังโหลดข้อมูล...</div>
+                <table id="runsTable" class="display" style="width:100%; display: none;">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>วันที่</th>
+                            <th>ชื่อผู้ใช้</th>
+                            <th>ระยะทาง (กม.)</th>
+                            <th>เวลา (นาที)</th>
+                            <th>รูปภาพ</th>
+                            <th>วันที่บันทึก</th>
+                            <th>จัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- ข้อมูลจะถูกเพิ่มโดย JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Modal สำหรับแก้ไขข้อมูล -->
+        <div id="editModal" class="modal">
+            <div class="modal-content">
+                <span class="close" id="closeEditModal">&times;</span>
+                <h2>แก้ไขข้อมูลการวิ่ง</h2>
+                <form id="editForm">
+                    <input type="hidden" id="editId">
+                    <div class="form-group">
+                        <label for="editRunDate">วันที่วิ่ง:</label>
+                        <input type="date" id="editRunDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editDistance">ระยะทาง (กม.):</label>
+                        <input type="number" id="editDistance" step="0.01" min="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editDuration">เวลาที่ใช้ (นาที):</label>
+                        <input type="number" id="editDuration" step="0.01" min="0.01" required>
+                    </div>
+                    <div class="modal-buttons">
+                        <button type="button" id="cancelEdit" class="btn-secondary">ยกเลิก</button>
+                        <button type="submit" id="saveEdit" class="btn-primary">บันทึก</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Modal สำหรับดูรูปภาพ -->
+        <div id="imageModal" class="modal">
+            <div class="modal-content">
+                <span class="close" id="closeImageModal">&times;</span>
+                <h2>รูปภาพหลักฐาน</h2>
+                <div>
+                    <img id="largeImage" class="image-preview-large" src="" alt="หลักฐานการวิ่ง">
+                </div>
+                <div id="imageInfo"></div>
+                <div class="modal-buttons">
+                    <button type="button" id="closeImage" class="btn-secondary">ปิด</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Modal สำหรับลบข้อมูล -->
+        <div id="deleteModal" class="modal">
+            <div class="modal-content">
+                <span class="close" id="closeDeleteModal">&times;</span>
+                <h2>ยืนยันการลบข้อมูล</h2>
+                <p>คุณแน่ใจหรือไม่ที่ต้องการลบข้อมูลการวิ่งนี้? การดำเนินการนี้ไม่สามารถยกเลิกได้</p>
+                <input type="hidden" id="deleteId">
+                <div class="modal-buttons">
+                    <button type="button" id="cancelDelete" class="btn-secondary">ยกเลิก</button>
+                    <button type="button" id="confirmDelete" class="btn-delete">ลบข้อมูล</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>NBU Running Tracker Admin v1.0</p>
+            <p>Office of Information Technology &copy; 2025</p>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+    <script src="js/admin.js"></script>
+</body>
+</html>
