@@ -58,7 +58,7 @@ function handleFileChange(event) {
     }
 }
 
-// Handle form submission
+// เปลี่ยนฟังก์ชัน handleSubmit ให้ใช้ uploadFile แทน fetch โดยตรง
 async function handleSubmit() {
     console.log("Submit button clicked");
     
@@ -115,15 +115,13 @@ async function handleSubmit() {
             return;
         }
         
-        // Create FormData
-        const formData = new FormData();
-        formData.append('file', proofImage);
-        
-        // ใช้ชื่อฟิลด์เป็นตัวพิมพ์เล็กทั้งหมดตามโครงสร้างฐานข้อมูล
-        formData.append('userid', userId);     // ตัวพิมพ์เล็ก
-        formData.append('rundate', rundate);   // ตัวพิมพ์เล็ก
-        formData.append('distance', distance);
-        formData.append('duration', duration);
+        // เตรียมข้อมูลสำหรับส่ง
+        const additionalData = {
+            userid: userId,
+            rundate: rundate,
+            distance: distance,
+            duration: duration
+        };
         
         // แสดงข้อมูลที่จะส่ง
         showDebug(`ข้อมูลที่ส่ง: 
@@ -133,50 +131,14 @@ async function handleSubmit() {
         - duration: ${duration}
         - file: ${proofImage.name} (${proofImage.size} bytes)`);
         
-        // Get access token
-        let token = null;
-        try {
-            token = liff.getAccessToken();
-            showDebug(token ? "ได้รับ access token สำเร็จ" : "ไม่ได้รับ access token");
-        } catch (tokenError) {
-            showDebug(`ข้อผิดพลาดในการดึง token: ${tokenError.message}`);
-        }
-        
-        // Prepare headers
-        const headers = {};
-        if (token) {
-            headers['Authorization'] = 'Bearer ' + token;
-        }
-        
-        // Send data to API
-        showDebug("กำลังส่งคำขอ POST ไปยัง API...");
+        // ใช้ฟังก์ชัน uploadFile ที่มีอยู่แล้วใน liff-init.js แทน fetch โดยตรง
+        showDebug("กำลังส่งข้อมูลไปยัง API ด้วยฟังก์ชัน uploadFile...");
         
         try {
-            const response = await fetch('https://runtracker.devapp.cc/api/runs/upload', {
-                method: 'POST',
-                headers: headers,
-                body: formData
-            });
+            // เรียกใช้ uploadFile จาก liff-init.js
+            const result = await uploadFile('/api/runs/upload', proofImage, additionalData);
             
-            showDebug(`การตอบกลับจาก API: สถานะ ${response.status}`);
-            
-            // Read response
-            const responseText = await response.text();
-            showDebug(`ข้อความตอบกลับ: ${responseText}`);
-            
-            if (!response.ok) {
-                throw new Error(`การอัปโหลดล้มเหลว: ${response.status} - ${responseText}`);
-            }
-            
-            // Parse JSON response if possible
-            let result;
-            try {
-                result = JSON.parse(responseText);
-                showDebug("แปลงข้อมูล JSON สำเร็จ");
-            } catch (jsonError) {
-                showDebug("ข้อความตอบกลับไม่ใช่ JSON");
-                result = { success: true, message: responseText };
-            }
+            showDebug(`ผลลัพธ์จาก API: ${JSON.stringify(result)}`);
             
             // Handle success
             showDebug("บันทึกข้อมูลสำเร็จ!");
@@ -188,7 +150,7 @@ async function handleSubmit() {
                 rundate: rundate,
                 distance: distance,
                 duration: duration,
-                imageurl: result.imageurl || result.imageUrl || result.run?.imageurl || 'https://example.com/placeholder.jpg'
+                imageurl: result.imageurl || result.imageUrl || (result.run ? result.run.imageurl : null) || 'https://example.com/placeholder.jpg'
             };
             
             // Setup share button
