@@ -28,12 +28,15 @@ app.use(cors({
 }));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+
 app.use(fileUpload({
     createParentPath: true,
     limits: { 
         fileSize: 10 * 1024 * 1024 // 10MB
     },
 }));
+
+
 
 // 静的ファイルの提供
 app.use(express.static(path.join(__dirname, 'public')));
