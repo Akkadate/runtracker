@@ -463,6 +463,8 @@ function renderRankingPage(userId) {
     if (pageInfo) {
         pageInfo.textContent = `หน้า ${currentPage} จาก ${Math.ceil(data.length / itemsPerPage)}`;
     }
+     // เรียกใช้ฟังก์ชันอัปเดตสถานะปุ่ม
+    updatePaginationButtons();
 }
 
 // สร้างปุ่มควบคุมการเปลี่ยนหน้า
@@ -562,6 +564,32 @@ document.head.appendChild(style);
         }
     });
 }
+
+
+// เพิ่มฟังก์ชันนี้หลังจากฟังก์ชัน createPaginationControls
+function updatePaginationButtons() {
+    const data = window.rankingData || [];
+    const totalPages = Math.ceil(data.length / (window.itemsPerPage || 10));
+    const prevButton = document.getElementById('prevPage');
+    const nextButton = document.getElementById('nextPage');
+    
+    if (prevButton) {
+        if (window.currentPage <= 1) {
+            prevButton.disabled = true;
+        } else {
+            prevButton.disabled = false;
+        }
+    }
+    
+    if (nextButton) {
+        if (window.currentPage >= totalPages) {
+            nextButton.disabled = true;
+        } else {
+            nextButton.disabled = false;
+        }
+    }
+}
+
 
 // แยกฟังก์ชันอัปเดตอันดับของผู้ใช้ออกมา
 function updateUserRank(userId, data) {
