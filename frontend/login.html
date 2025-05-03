@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - NBU Running Tracker</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Prompt', sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        
+        .login-container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 400px;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        
+        button {
+            background-color: #06c755;
+            color: white;
+            border: none;
+            padding: 12px;
+            width: 100%;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #05a648;
+        }
+        
+        .error-message {
+            color: #e74c3c;
+            margin-top: 20px;
+            text-align: center;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h1>Admin Login</h1>
+        <div class="form-group">
+            <label for="username">ชื่อผู้ใช้:</label>
+            <input type="text" id="username" required>
+        </div>
+        <div class="form-group">
+            <label for="password">รหัสผ่าน:</label>
+            <input type="password" id="password" required>
+        </div>
+        <button id="loginButton">เข้าสู่ระบบ</button>
+        <div id="errorMessage" class="error-message"></div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // ตรวจสอบ session
+            checkSession();
+            
+            // เพิ่ม event listener
+            $('#loginButton').on('click', login);
+            
+            // ใช้งาน Enter key
+            $('#password').on('keyup', function(e) {
+                if (e.key === 'Enter') {
+                    login();
+                }
+            });
+        });
+        
+        function checkSession() {
+            const isLoggedIn = sessionStorage.getItem('adminLoggedIn');
+            
+            if (isLoggedIn === 'true') {
+                // ถ้าล็อกอินแล้ว ให้ redirect ไปยังหน้า admin
+                window.location.href = 'admin.html';
+            }
+        }
+        
+        function login() {
+            const username = $('#username').val();
+            const password = $('#password').val();
+            
+            // ตรวจสอบค่าว่าง
+            if (!username || !password) {
+                $('#errorMessage').text('กรุณากรอกชื่อผู้ใช้และรหัสผ่าน').show();
+                return;
+            }
+            
+            // ตรวจสอบชื่อผู้ใช้และรหัสผ่าน (แบบง่าย)
+            if (username === 'admin' && password === 'nbu2025') {
+                // บันทึก session
+                sessionStorage.setItem('adminLoggedIn', 'true');
+                
+                // redirect ไปยังหน้า admin
+                window.location.href = 'admin.html';
+            } else {
+                $('#errorMessage').text('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง').show();
+            }
+        }
+    </script>
+</body>
+</html>
