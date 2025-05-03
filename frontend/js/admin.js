@@ -147,40 +147,43 @@ function displayTable(data) {
     setupEventListeners();
 }
     
- // แก้ไขใน setupEventListeners function
+// ใช้แบบนี้แทน setupEventListeners ตัวเดิม
 function setupEventListeners() {
-    // รูปภาพ - ใช้ event delegation
+    // สำคัญ: ใช้ event delegation แทนการผูก event โดยตรง
+    // เพราะ elements ถูกสร้างขึ้นแบบ dynamic หลังจากโหลดข้อมูล
     $(document).on('click', '.thumbnail', function() {
-        const fullImageUrl = $(this).data('full');
+        const fullImageUrl = $(this).attr('data-full');
         showImageModal(fullImageUrl);
     });
     
-    // ปุ่มแก้ไข - ใช้ event delegation
     $(document).on('click', '.btn-edit', function() {
-        const id = $(this).data('id');
+        const id = $(this).attr('data-id');
         showEditModal(id);
     });
     
-    // ปุ่มลบ - ใช้ event delegation
     $(document).on('click', '.btn-delete', function() {
-        const id = $(this).data('id');
+        const id = $(this).attr('data-id');
         showDeleteModal(id);
     });
     
-    // ปุ่มปิด modals
-    $('.close, #cancelEdit, #closeImage, #cancelDelete').click(function() {
+    // ปุ่มที่มีอยู่แล้วในเอกสาร สามารถใช้ selector ธรรมดาได้
+    $('.close, #cancelEdit, #closeImage, #cancelDelete').on('click', function() {
         closeAllModals();
     });
     
-    // ฟอร์มแก้ไข
-    $('#editForm').submit(function(e) {
+    $('#editForm').on('submit', function(e) {
         e.preventDefault();
         updateRunData();
     });
     
-    // ปุ่มยืนยันการลบ
-    $('#confirmDelete').click(deleteRunData);
+    $('#confirmDelete').on('click', deleteRunData);
 }
+
+// เรียก setupEventListeners ทันทีที่โหลดเอกสาร
+$(document).ready(function() {
+    setupEventListeners();
+    loadData();
+});
 
    // แก้ไขฟังก์ชันแสดง Modal รูปภาพ
 function showImageModal(imageUrl) {
