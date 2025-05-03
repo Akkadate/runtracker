@@ -257,25 +257,48 @@
                 <h2>รายการวิ่งทั้งหมด</h2>
                 <div class="loading" id="loading">กำลังโหลดข้อมูล...</div>
                 <table id="runsTable" class="display" style="width:100%; display: none;">
-    <thead>
-        <tr>
-            <th>ชื่อผู้ใช้</th>
-            <th>เบอร์โทรศัพท์</th>
-            <th>วันที่วิ่ง</th>
-            <th>ระยะทาง (กม.)</th>
-            <th>เวลา (นาที)</th>
-            <th>รูปภาพ</th>
-            <th>วันที่บันทึก</th>
-            <th>จัดการ</th>
-        </tr>
-    </thead>
-    <tbody>
-        <!-- ข้อมูลจะถูกเพิ่มโดย JavaScript -->
-    </tbody>
-</table>
+                    <thead>
+                        <tr>
+                            <th>ชื่อผู้ใช้</th>
+                            <th>เบอร์โทรศัพท์</th>
+                            <th>วันที่วิ่ง</th>
+                            <th>ระยะทาง (กม.)</th>
+                            <th>เวลา (นาที)</th>
+                            <th>รูปภาพ</th>
+                            <th>วันที่บันทึก</th>
+                            <th>จัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- ข้อมูลจะถูกเพิ่มโดย JavaScript -->
+                    </tbody>
+                </table>
             </div>
         </div>
-        
+
+<!-- เพิ่มหลังจากส่วนตารางข้อมูลการวิ่ง และก่อนส่วน Modal -->
+<div class="table-container ranking-section">
+    <h2>อันดับนักวิ่ง</h2>
+    <div class="loading" id="rankingLoading">กำลังโหลดข้อมูลอันดับ...</div>
+    <table id="rankingTable" class="display" style="width:100%; display: none;">
+        <thead>
+            <tr>
+                <th>อันดับ</th>
+                <th>ชื่อผู้ใช้</th>
+                <th>รูปโปรไฟล์</th>
+                <th>ระยะทางรวม (กม.)</th>
+                <th>จำนวนครั้ง</th>
+                <th>ระยะทางเฉลี่ย/ครั้ง</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- ข้อมูลจะถูกเพิ่มโดย JavaScript -->
+        </tbody>
+    </table>
+</div>
+            
+
+            
         <!-- Modal สำหรับแก้ไขข้อมูล -->
         <div id="editModal" class="modal">
             <div class="modal-content">
