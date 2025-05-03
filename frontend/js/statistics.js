@@ -506,34 +506,46 @@ function createPaginationControls(userId) {
         </div>
     `;
     
-    // เพิ่ม CSS สำหรับปุ่มแบ่งหน้า
-    const style = document.createElement('style');
-    style.textContent = `
-        .pagination-container {
-            margin: 15px 0;
-            text-align: center;
-        }
-        .pagination-controls {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 10px;
-        }
-        .btn-pagination {
-            background-color: #f0f0f0;
-            border: 1px solid #ddd;
-            padding: 5px 10px;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .btn-pagination:hover {
-            background-color: #e0e0e0;
-        }
-        #pageInfo {
-            padding: 5px 10px;
-        }
-    `;
-    document.head.appendChild(style);
+   // แก้ไขสไตล์ในฟังก์ชัน createPaginationControls
+const style = document.createElement('style');
+style.textContent = `
+    .pagination-container {
+        margin: 15px 0;
+        text-align: center;
+    }
+    .pagination-controls {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+        font-family: 'Prompt', sans-serif; /* ใช้ฟอนต์ Prompt เหมือนกับส่วนอื่นๆ */
+    }
+    .btn-pagination {
+        background-color: #06c755; /* สีเขียวของ LINE เหมือนปุ่มอื่นๆ */
+        color: white;
+        border: none;
+        padding: 8px 15px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-family: 'Prompt', sans-serif; /* ฟอนต์ Prompt */
+        font-size: 14px;
+        font-weight: 500;
+        transition: background-color 0.3s;
+    }
+    .btn-pagination:hover {
+        background-color: #05b049; /* สีเขียวเข้มเมื่อวางเมาส์ */
+    }
+    .btn-pagination:disabled {
+        background-color: #cccccc;
+        cursor: not-allowed;
+    }
+    #pageInfo {
+        padding: 5px 10px;
+        font-family: 'Prompt', sans-serif; /* ฟอนต์ Prompt */
+        font-size: 14px;
+    }
+`;
+document.head.appendChild(style);
     
     // เพิ่ม Event Listener สำหรับปุ่มเปลี่ยนหน้า
     document.getElementById('prevPage').addEventListener('click', () => {
