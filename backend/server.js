@@ -33,7 +33,7 @@ app.use(fileUpload({
     useTempFiles: false,
     debug: true, // เปิด debug mode
     limits: { 
-        fileSize: 10 * 1024 * 1024, // 10MB
+        fileSize: 20 * 1024 * 1024, // 20MB
     },
     abortOnLimit: true,
     responseOnLimit: 'File size limit has been reached',
