@@ -268,9 +268,7 @@ $(document).ready(function() {
             modal.style.display = 'none';
         });
     }
-
-    // เพิ่มหลังจากฟังก์ชัน loadData ในไฟล์ admin.js
-
+  
 // เพิ่มฟังก์ชันโหลดข้อมูลอันดับ
 async function loadRankingData() {
     try {
