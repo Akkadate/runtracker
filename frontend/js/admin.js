@@ -1,5 +1,12 @@
 // js/admin.js - JavaScript สำหรับหน้า Admin
 document.addEventListener('DOMContentLoaded', function() {
+
+    // ตรวจสอบ session
+    checkSession();
+    
+    // เพิ่ม event listener สำหรับปุ่มล็อกอิน
+    document.getElementById('loginButton').addEventListener('click', login);
+    
     // ตั้งค่า API URL
     const API_BASE_URL = 'https://runtracker.devapp.cc';
     
@@ -299,7 +306,79 @@ async function deleteRunData() {
         alert('เกิดข้อผิดพลาดในการลบข้อมูล: ' + error.message);
     }
 }
+    // ฟังก์ชันตรวจสอบ session
+function checkSession() {
+    const isLoggedIn = sessionStorage.getItem('adminLoggedIn');
     
-    // โหลดข้อมูลเมื่อหน้าเว็บโหลดเสร็จ
-    loadData();
+    if (isLoggedIn === 'true') {
+        // ซ่อนฟอร์มล็อกอิน และแสดงหน้า admin
+        document.getElementById('loginForm').style.display = 'none';
+        document.getElementById('adminPanel').style.display = 'block';
+        
+        // โหลดข้อมูล
+        loadData();
+    } else {
+        // แสดงฟอร์มล็อกอิน และซ่อนหน้า admin
+        document.getElementById('loginForm').style.display = 'block';
+        document.getElementById('adminPanel').style.display = 'none';
+    }
+}
+
+// ฟังก์ชันล็อกอิน
+function login() {
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    
+    // ตรวจสอบชื่อผู้ใช้และรหัสผ่าน (แบบง่าย)
+    // ในระบบจริง ควรใช้ API ที่มีการเข้ารหัส
+    if (username === 'admin' && password === 'nbu2025') {
+        // บันทึก session
+        sessionStorage.setItem('adminLoggedIn', 'true');
+        
+        // ซ่อนฟอร์มล็อกอิน และแสดงหน้า admin
+        document.getElementById('loginForm').style.display = 'none';
+        document.getElementById('adminPanel').style.display = 'block';
+        
+        // โหลดข้อมูล
+        loadData();
+    } else {
+        // แสดงข้อความผิดพลาด
+        const errorElement = document.getElementById('loginError');
+        errorElement.textContent = 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง';
+        errorElement.style.display = 'block';
+    }
+}
+
+// เพิ่มปุ่มออกจากระบบในหน้า admin
+function addLogoutButton() {
+    const header = document.querySelector('.header');
+    
+    if (header) {
+        const logoutBtn = document.createElement('button');
+        logoutBtn.textContent = 'ออกจากระบบ';
+        logoutBtn.className = 'logout-btn';
+        logoutBtn.onclick = function() {
+            sessionStorage.removeItem('adminLoggedIn');
+            location.reload();
+        };
+        
+        header.appendChild(logoutBtn);
+    }
+}
+
+// แก้ไขฟังก์ชัน loadData
+async function loadData() {
+    try {
+        // เพิ่มปุ่มออกจากระบบ
+        addLogoutButton();
+        
+        // โหลดข้อมูลเหมือนเดิม
+    }
+    catch (error) {
+        // จัดการข้อผิดพลาดเหมือนเดิม
+    }
+}
+    
+  
+  
 });
