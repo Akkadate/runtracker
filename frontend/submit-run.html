@@ -6,6 +6,42 @@
     <title>ส่งข้อมูลการวิ่ง - NBU Running Tracker</title>
     <link rel="stylesheet" href="css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* เพิ่ม CSS สำหรับแสดงสถานะการอัปโหลด */
+        .upload-status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            display: none;
+        }
+        
+        .upload-status.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .upload-status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        /* ปรับแต่งหน้า imagePreview */
+        .image-preview {
+            margin-top: 10px;
+            text-align: center;
+            max-height: 200px;
+            overflow: hidden;
+        }
+        
+        .image-preview img {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -39,6 +75,7 @@
                     <label for="proofImage">ภาพหลักฐาน:</label>
                     <input type="file" id="proofImage" name="proofImage" accept="image/*" required>
                     <div id="imagePreview" class="image-preview"></div>
+                    <div id="uploadStatus" class="upload-status"></div>
                 </div>
                 <button type="submit" class="btn-primary">บันทึกข้อมูล</button>
             </form>
@@ -50,6 +87,17 @@
                 <div class="share-container">
                     <button id="shareButton" class="btn-secondary">แชร์ผลงานไปยัง LINE</button>
                 </div>
+                <div class="back-container" style="margin-top: 15px;">
+                    <a href="statistics.html" class="btn-primary">ดูสถิติของฉัน</a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- เพิ่มส่วนแสดงข้อผิดพลาด -->
+        <div id="errorMessage" class="message-container hidden">
+            <div class="message error">
+                <p id="errorText">เกิดข้อผิดพลาดในการบันทึกข้อมูล</p>
+                <button id="retryButton" class="btn-primary">ลองใหม่อีกครั้ง</button>
             </div>
         </div>
         
@@ -58,8 +106,73 @@
         </div>
     </div>
 
+    <!-- เพิ่ม Debug Panel สำหรับพัฒนา -->
+    <div id="debugPanel" style="margin-top: 20px; padding: 10px; background: #f5f5f5; border: 1px solid #ddd; display: none;">
+        <h3>Debug Panel</h3>
+        <div id="debugOutput" style="max-height: 200px; overflow: auto; font-family: monospace;"></div>
+    </div>
+
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script src="js/liff-init.js"></script>
     <script src="js/submit-run.js"></script>
+    
+    <!-- เพิ่ม Script สำหรับการ Debug -->
+    <script>
+        // ตรวจสอบว่าเป็นโหมด Development หรือไม่
+        const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        
+        if (isDev) {
+            document.getElementById('debugPanel').style.display = 'block';
+            
+            // Override console.log เพื่อแสดงใน debugPanel
+            const oldConsoleLog = console.log;
+            console.log = function(...args) {
+                oldConsoleLog.apply(console, args);
+                
+                const output = document.getElementById('debugOutput');
+                const message = args.map(arg => {
+                    if (typeof arg === 'object') {
+                        return JSON.stringify(arg, null, 2);
+                    }
+                    return arg;
+                }).join(' ');
+                
+                const line = document.createElement('div');
+                line.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+                output.appendChild(line);
+                
+                // Scroll to bottom
+                output.scrollTop = output.scrollHeight;
+            };
+            
+            // Override console.error
+            const oldConsoleError = console.error;
+            console.error = function(...args) {
+                oldConsoleError.apply(console, args);
+                
+                const output = document.getElementById('debugOutput');
+                const message = args.map(arg => {
+                    if (typeof arg === 'object') {
+                        return JSON.stringify(arg, null, 2);
+                    }
+                    return arg;
+                }).join(' ');
+                
+                const line = document.createElement('div');
+                line.textContent = `[${new Date().toLocaleTimeString()}] ERROR: ${message}`;
+                line.style.color = 'red';
+                output.appendChild(line);
+                
+                // Scroll to bottom
+                output.scrollTop = output.scrollHeight;
+            };
+        }
+        
+        // เพิ่ม Event Listener สำหรับปุ่มลองใหม่
+        document.getElementById('retryButton').addEventListener('click', function() {
+            document.getElementById('errorMessage').classList.add('hidden');
+            document.getElementById('runForm').classList.remove('hidden');
+        });
+    </script>
 </body>
 </html>
