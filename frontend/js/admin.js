@@ -265,6 +265,96 @@ $(document).ready(function() {
             modal.style.display = 'none';
         });
     }
+
+    // เพิ่มหลังจากฟังก์ชัน loadData ในไฟล์ admin.js
+
+// เพิ่มฟังก์ชันโหลดข้อมูลอันดับ
+async function loadRankingData() {
+    try {
+        document.getElementById('rankingLoading').style.display = 'block';
+        document.getElementById('rankingTable').style.display = 'none';
+        
+        // ใช้ endpoint ที่มีอยู่แล้ว หรือเพิ่ม endpoint ใหม่ถ้าต้องการ
+        const response = await fetch(`${API_BASE_URL}/api/runs/ranking`);
+        
+        if (!response.ok) {
+            throw new Error(`Server responded with status: ${response.status}`);
+        }
+        
+        const rankingData = await response.json();
+        console.log('Ranking data:', rankingData);
+        
+        displayRankingTable(rankingData);
+    } catch (error) {
+        console.error('Error loading ranking data:', error);
+        document.getElementById('rankingLoading').textContent = 'เกิดข้อผิดพลาดในการโหลดข้อมูลอันดับ: ' + error.message;
+    }
+}
+
+// เพิ่มฟังก์ชันแสดงตารางอันดับ
+function displayRankingTable(data) {
+    // ซ่อนข้อความ loading
+    document.getElementById('rankingLoading').style.display = 'none';
+    
+    // สร้างข้อมูลสำหรับตาราง
+    const tableData = data.map((item, index) => {
+        // สร้าง HTML สำหรับรูปโปรไฟล์
+        const profileImageHtml = item.pictureUrl 
+            ? `<img src="${item.pictureUrl}" class="profile-thumbnail" alt="${item.displayName}">`
+            : '<div class="no-profile">ไม่มีรูป</div>';
+        
+        // คำนวณระยะทางเฉลี่ยต่อครั้ง
+        const avgDistance = item.totalRuns > 0 
+            ? (item.totalDistance / item.totalRuns).toFixed(2)
+            : '0.00';
+        
+        return [
+            index + 1, // อันดับ
+            item.displayName || 'ไม่ระบุชื่อ',
+            profileImageHtml,
+            parseFloat(item.totalDistance).toFixed(2),
+            item.totalRuns,
+            avgDistance
+        ];
+    });
+    
+    // ล้างตารางเดิมถ้ามี
+    if ($.fn.DataTable.isDataTable('#rankingTable')) {
+        $('#rankingTable').DataTable().destroy();
+    }
+    
+    // ล้าง tbody
+    $('#rankingTable tbody').empty();
+    
+    // แสดงตาราง DataTable
+    const table = $('#rankingTable').DataTable({
+        data: tableData,
+        columns: [
+            { title: 'อันดับ' },
+            { title: 'ชื่อผู้ใช้' },
+            { title: 'รูปโปรไฟล์', orderable: false },
+            { title: 'ระยะทางรวม (กม.)' },
+            { title: 'จำนวนครั้ง' },
+            { title: 'ระยะทางเฉลี่ย/ครั้ง' }
+        ],
+        order: [[3, 'desc']], // เรียงตามระยะทางรวมจากมากไปน้อย
+        language: {
+            url: '//cdn.datatables.net/plug-ins/1.11.5/i18n/th.json'
+        },
+        responsive: true
+    });
+    
+    // แสดงตาราง
+    document.getElementById('rankingTable').style.display = 'table';
+}
+
+// เพิ่มการเรียกใช้งานในฟังก์ชัน $(document).ready หรือฟังก์ชันโหลดข้อมูลหลัก
+$(document).ready(function() {
+    // ตรวจสอบสถานะล็อกอินและโค้ดอื่นๆ ที่มีอยู่แล้ว
+    
+    // เรียกฟังก์ชันโหลดข้อมูลอันดับด้วย
+    loadRankingData();
+});
     
     // ฟังก์ชันอัปเดตข้อมูล
     async function updateRunData() {
