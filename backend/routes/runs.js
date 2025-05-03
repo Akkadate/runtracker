@@ -202,54 +202,30 @@ router.get('/stats/:userId', async (req, res) => {
     }
 });
 
-// ランキングデータを取得
+// แก้ไขเส้นทาง /ranking ให้ใช้ชื่อ column ที่ถูกต้อง
 router.get('/ranking', async (req, res) => {
     try {
-        // ユーザーごとの合計距離を計算するクエリ
+        console.log('Loading ranking data...');
+        
+        // เปลี่ยนเป็นใช้ view ที่มีอยู่แล้วในฐานข้อมูล (จากไฟล์ scripttable.sql)
         const { data, error } = await supabase
-            .from('runs')
-            .select('userId, distance');
+            .from('runner_rankings')
+            .select('*')
+            .order('totaldistance', { ascending: false });
         
-        if (error) throw error;
+        if (error) {
+            console.error('Error fetching ranking data:', error);
+            throw error;
+        }
         
-        // ユーザーごとの合計距離を集計
-        const userDistances = {};
-        data.forEach(run => {
-            const userId = run.userId;
-            const distance = parseFloat(run.distance);
-            
-            if (!userDistances[userId]) {
-                userDistances[userId] = 0;
-            }
-            
-            userDistances[userId] += distance;
-        });
+        console.log(`Found ${data.length} ranking records`);
         
-        // ユーザー情報を取得
-        const { data: users, error: usersError } = await supabase
-            .from('users')
-            .select('userId, displayName, pictureUrl');
-        
-        if (usersError) throw usersError;
-        
-        // ユーザー情報と距離を結合
-        const rankingData = users
-            .map(user => ({
-                userId: user.userId,
-                displayName: user.displayName,
-                pictureUrl: user.pictureUrl,
-                totalDistance: userDistances[user.userId] || 0
-            }))
-            .sort((a, b) => b.totalDistance - a.totalDistance)
-            .slice(0, 50); // 上位50人まで
-        
-        res.json(rankingData);
+        res.json(data);
     } catch (error) {
         console.error('Error fetching ranking data:', error);
         res.status(500).json({ message: 'Failed to fetch ranking data', error: error.message });
     }
 });
-
 // ดึงรายการวิ่งทั้งหมด (สำหรับ admin)
 router.get('/admin/all', async (req, res) => {
     try {
