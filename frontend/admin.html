@@ -213,6 +213,35 @@ table.dataTable td:nth-child(6) {
     transition: all 0.2s ease;
 }
 
+        /* ปรับแต่งรูปภาพในโมดัล */
+.image-preview-large {
+    max-width: 100%;
+    max-height: 70vh; /* ลดความสูงสูงสุดจาก 80vh เป็น 70vh */
+    width: auto;
+    height: auto;
+    margin: 0 auto;
+    display: block;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+/* เพิ่มกรอบและพื้นหลังให้กับส่วนที่แสดงรูปภาพ */
+.image-container {
+    background-color: #f5f5f5;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    text-align: center;
+    max-height: 75vh;
+    overflow: auto; /* เพิ่ม scroll หากรูปภาพใหญ่เกินไป */
+}
+
+/* ปรับขนาดโมดัลรูปภาพให้มีพื้นที่มากขึ้น */
+#imageModal .modal-content {
+    max-width: 85vw; /* ใช้ viewport width เพื่อให้ปรับขนาดตามหน้าจอ */
+    width: auto;
+    max-height: 90vh;
+}
 .btn-edit {
     background-color: #4a90e2;
     color: white;
@@ -562,12 +591,12 @@ table.dataTable td:nth-child(6) {
             </div>
         </div>
         
-        <!-- Modal สำหรับดูรูปภาพ -->
+       <!-- Modal สำหรับดูรูปภาพ - แก้ไขโครงสร้าง -->
         <div id="imageModal" class="modal">
             <div class="modal-content">
                 <span class="close" id="closeImageModal">&times;</span>
                 <h2>รูปภาพหลักฐาน</h2>
-                <div>
+                <div class="image-container">
                     <img id="largeImage" class="image-preview-large" src="" alt="หลักฐานการวิ่ง">
                 </div>
                 <div id="imageInfo"></div>
