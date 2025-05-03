@@ -8,6 +8,7 @@ $(document).ready(function() {
         window.location.href = 'login.html';
         return;
     }
+
     
     // ตั้งค่า API URL
     const API_BASE_URL = 'https://runtracker.devapp.cc';
@@ -49,6 +50,11 @@ $(document).ready(function() {
         $('.header').append(logoutBtn);
     }
 
+    function getAuthToken() {
+    return sessionStorage.getItem('adminToken');
+    }
+
+    
     // ใช้แบบนี้แทน setupEventListeners ตัวเดิม
     function setupEventListeners() {
         // สำคัญ: ใช้ event delegation แทนการผูก event โดยตรง
@@ -88,7 +94,12 @@ $(document).ready(function() {
     async function loadData() {
         try {
             // โหลดข้อมูลการวิ่งทั้งหมด
-            const response = await fetch(`${API_BASE_URL}/api/runs/admin/all`);
+       //     const response = await fetch(`${API_BASE_URL}/api/runs/admin/all`);
+             const response = await fetch(`${API_BASE_URL}/api/runs/admin/all`, {
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`
+            }
+        });
             
             if (!response.ok) {
                 throw new Error(`Server responded with status: ${response.status}`);
