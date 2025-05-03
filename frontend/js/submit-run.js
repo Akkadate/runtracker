@@ -136,9 +136,26 @@ async function handleSubmit() {
         
         try {
             // เรียกใช้ uploadFile จาก liff-init.js
-            const result = await uploadFile('/api/runs/upload', proofImage, additionalData);
-            
-            showDebug(`ผลลัพธ์จาก API: ${JSON.stringify(result)}`);
+        const formData = new FormData();
+        
+        // สำคัญมาก: ต้องใช้ชื่อ 'file' ไม่ใช่ชื่ออื่น
+        formData.append('file', proofImage);  // ใช้ชื่อ 'file' ตรงตามที่ backend คาดหวัง
+        
+        // เพิ่มข้อมูลอื่นๆ
+        formData.append('userid', userId);
+        formData.append('rundate', rundate);
+        formData.append('distance', distance);
+        formData.append('duration', duration);
+        
+        showDebug("กำลังส่งข้อมูลไปยัง API...");
+        
+        // ส่งข้อมูลโดยตรงไม่ผ่านฟังก์ชัน uploadFile
+        const response = await fetch('https://runtracker.devapp.cc/api/runs/upload', {
+            method: 'POST',
+            // ไม่ต้องกำหนด Content-Type และ headers อื่นๆ
+            body: formData
+        });
+        
             
             // Handle success
             showDebug("บันทึกข้อมูลสำเร็จ!");
