@@ -1,3 +1,12 @@
+// เพิ่มที่ด้านบนของ admin.js
+$(document).ready(function() {
+    // ตรวจสอบสถานะล็อกอิน
+    checkLogin();
+    
+    // เพิ่ม event listeners
+    setupEventListeners();
+});
+
 // js/admin.js - JavaScript สำหรับหน้า Admin
 document.addEventListener('DOMContentLoaded', function() {
 
@@ -352,23 +361,48 @@ function login() {
     }
 }
 
-// เพิ่มปุ่มออกจากระบบในหน้า admin
+// ฟังก์ชันเพิ่มปุ่มออกจากระบบ
 function addLogoutButton() {
-    const header = document.querySelector('.header');
-    
-    if (header) {
-        const logoutBtn = document.createElement('button');
-        logoutBtn.textContent = 'ออกจากระบบ';
-        logoutBtn.className = 'logout-btn';
-        logoutBtn.onclick = function() {
+    // เพิ่มปุ่มออกจากระบบในส่วนหัว
+    const logoutBtn = $('<button>')
+        .text('ออกจากระบบ')
+        .addClass('logout-btn')
+        .css({
+            position: 'absolute',
+            right: '20px',
+            top: '20px',
+            padding: '8px 15px',
+            backgroundColor: '#e74c3c',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer'
+        })
+        .on('click', function() {
             sessionStorage.removeItem('adminLoggedIn');
-            location.reload();
-        };
-        
-        header.appendChild(logoutBtn);
-    }
+            window.location.href = 'login.html';
+        });
+    
+    $('.header').append(logoutBtn);
 }
 
+    // ฟังก์ชันตรวจสอบสถานะล็อกอิน
+function checkLogin() {
+    const isLoggedIn = sessionStorage.getItem('adminLoggedIn');
+    
+    if (isLoggedIn !== 'true') {
+        // ถ้ายังไม่ได้ล็อกอิน ให้ redirect ไปยังหน้าล็อกอิน
+        window.location.href = 'login.html';
+        return;
+    }
+    
+    // เพิ่มปุ่มออกจากระบบ
+    addLogoutButton();
+    
+    // โหลดข้อมูล
+    loadData();
+}
+    
 // แก้ไขฟังก์ชัน loadData
 async function loadData() {
     try {
