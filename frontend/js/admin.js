@@ -50,10 +50,7 @@ $(document).ready(function() {
         $('.header').append(logoutBtn);
     }
 
-    function getAuthToken() {
-    return sessionStorage.getItem('adminToken');
-    }
-
+ 
     
     // ใช้แบบนี้แทน setupEventListeners ตัวเดิม
     function setupEventListeners() {
@@ -94,13 +91,8 @@ $(document).ready(function() {
     async function loadData() {
         try {
             // โหลดข้อมูลการวิ่งทั้งหมด
-       //     const response = await fetch(`${API_BASE_URL}/api/runs/admin/all`);
-             const response = await fetch(`${API_BASE_URL}/api/runs/admin/all`, {
-            headers: {
-                'Authorization': `Bearer ${getAuthToken()}`
-            }
-        });
-            
+            const response = await fetch(`${API_BASE_URL}/api/runs/admin/all`);
+                       
             if (!response.ok) {
                 throw new Error(`Server responded with status: ${response.status}`);
             }
