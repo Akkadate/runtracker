@@ -1,12 +1,17 @@
 // ปรับปรุงไฟล์ submit-run.js เพื่อให้ส่งข้อมูลวิ่งและอัปโหลดภาพได้สำเร็จ
 document.addEventListener('DOMContentLoaded', () => {
+    console.log("DOM Content Loaded - Initializing submit-run.js");
+    
     // รอให้ LIFF เริ่มทำงาน
     if (liff.isInClient() && liff.isLoggedIn()) {
+        console.log("LIFF is initialized and user is logged in");
         initializeSubmitRunPage();
     } else {
         // ตรวจสอบเป็นระยะ
+        console.log("Waiting for LIFF to initialize...");
         const checkLiffInterval = setInterval(() => {
             if (liff.isInClient() && liff.isLoggedIn()) {
+                console.log("LIFF is now initialized");
                 clearInterval(checkLiffInterval);
                 initializeSubmitRunPage();
             }
@@ -24,49 +29,72 @@ async function initializeSubmitRunPage() {
         console.log("LIFF profile retrieved:", profile.userId);
         
         // ตรวจสอบว่าผู้ใช้ลงทะเบียนแล้วหรือไม่ โดยใช้ userId ของ LINE
+        console.log("Checking if user is registered");
         const userData = await fetchUserData(profile.userId);
         
         if (!userData) {
             // ถ้ายังไม่ลงทะเบียน แสดงข้อความให้ไปลงทะเบียน
+            console.log("User not registered, showing login required message");
             document.getElementById('loginRequired').classList.remove('hidden');
             document.getElementById('runForm').classList.add('hidden');
-            console.log("User not registered, showing login required message");
             return;
         }
         
         // ถ้าลงทะเบียนแล้ว แสดงฟอร์มส่งข้อมูลการวิ่ง
+        console.log("User is registered, showing run form");
         document.getElementById('loginRequired').classList.add('hidden');
         document.getElementById('runForm').classList.remove('hidden');
-        console.log("User is registered, showing run form");
         
         // ตั้งค่าวันที่เริ่มต้นเป็นวันนี้
         const today = new Date().toISOString().split('T')[0];
         document.getElementById('rundate').value = today;
+        console.log("Default date set to:", today);
         
         // ตั้งค่าการแสดงตัวอย่างรูปภาพ
         document.getElementById('proofImage').addEventListener('change', (event) => {
             const file = event.target.files[0];
             if (file) {
+                console.log("File selected:", file.name, "Size:", file.size, "bytes");
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     const imagePreview = document.getElementById('imagePreview');
                     imagePreview.innerHTML = `<img src="${e.target.result}" alt="ตัวอย่างรูปภาพ">`;
+                    console.log("Image preview created");
                 }
                 reader.readAsDataURL(file);
-                console.log("Image preview created for selected file:", file.name);
             }
         });
         
-        // จัดการการส่งฟอร์ม
-        document.getElementById('submitRunForm').addEventListener('submit', async (event) => {
-            event.preventDefault();
-            console.log("Form submitted");
+        // จัดการการส่งฟอร์ม - ใช้ปุ่มแทนการ submit ฟอร์ม
+        document.getElementById('submitButton').addEventListener('click', async () => {
+            console.log("Submit button clicked");
             
             // ดึงข้อมูลจากฟอร์ม
             const rundate = document.getElementById('rundate').value;
             const distance = document.getElementById('distance').value;
             const duration = document.getElementById('duration').value;
             const proofImage = document.getElementById('proofImage').files[0];
+            
+            // ตรวจสอบข้อมูลว่ากรอกครบหรือไม่
+            if (!rundate) {
+                alert('กรุณาระบุวันที่วิ่ง');
+                return;
+            }
+            
+            if (!distance) {
+                alert('กรุณาระบุระยะทาง');
+                return;
+            }
+            
+            if (!duration) {
+                alert('กรุณาระบุเวลาที่ใช้');
+                return;
+            }
+            
+            if (!proofImage) {
+                alert('กรุณาอัปโหลดภาพหลักฐาน');
+                return;
+            }
             
             console.log('Form data:', {
                 rundate,
@@ -75,16 +103,17 @@ async function initializeSubmitRunPage() {
                 proofImage: proofImage ? proofImage.name : 'No file selected'
             });
             
-            if (!proofImage) {
-                alert('กรุณาอัปโหลดภาพหลักฐาน');
-                return;
-            }
-            
             try {
                 // ล็อคปุ่มส่งเพื่อป้องกันการกดซ้ำ
-                const submitButton = document.getElementById('submitRunForm').querySelector('button');
+                const submitButton = document.getElementById('submitButton');
                 submitButton.textContent = 'กำลังบันทึก...';
                 submitButton.disabled = true;
+                
+                // แสดงสถานะการอัปโหลด
+                const uploadStatus = document.getElementById('uploadStatus');
+                uploadStatus.textContent = 'กำลังอัปโหลดข้อมูล...';
+                uploadStatus.style.display = 'block';
+                uploadStatus.className = 'upload-status';
                 
                 // เตรียมข้อมูลสำหรับส่ง API
                 const userid = profile.userId;  // ใช้ userId จาก LINE
@@ -105,6 +134,9 @@ async function initializeSubmitRunPage() {
                 
                 if (result.success || result.message) {
                     // บันทึกข้อมูลสำเร็จ
+                    uploadStatus.textContent = 'อัปโหลดสำเร็จ!';
+                    uploadStatus.className = 'upload-status success';
+                    
                     document.getElementById('runForm').classList.add('hidden');
                     document.getElementById('successMessage').classList.remove('hidden');
                     
@@ -125,10 +157,18 @@ async function initializeSubmitRunPage() {
                 }
             } catch (error) {
                 console.error('Error submitting run data:', error);
-                alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล: ' + error.message);
+                
+                // แสดงข้อความผิดพลาด
+                const uploadStatus = document.getElementById('uploadStatus');
+                uploadStatus.textContent = 'เกิดข้อผิดพลาด: ' + error.message;
+                uploadStatus.className = 'upload-status error';
+                
+                document.getElementById('errorText').textContent = 'เกิดข้อผิดพลาดในการบันทึกข้อมูล: ' + error.message;
+                document.getElementById('runForm').classList.add('hidden');
+                document.getElementById('errorMessage').classList.remove('hidden');
                 
                 // คืนค่าปุ่มส่ง
-                const submitButton = document.getElementById('submitRunForm').querySelector('button');
+                const submitButton = document.getElementById('submitButton');
                 submitButton.textContent = 'บันทึกข้อมูล';
                 submitButton.disabled = false;
             }
@@ -192,12 +232,15 @@ async function uploadRunData(formData) {
         }
 
         // ส่งข้อมูลไปยัง API
+        console.log('Sending POST request to API endpoint...');
         const response = await fetch('https://runtracker.devapp.cc/api/runs/upload', {
             method: 'POST',
             headers: headers,
             body: formData
         });
 
+        console.log('API response status:', response.status);
+        
         // อ่านข้อความตอบกลับ
         const responseText = await response.text();
         console.log('API response text:', responseText);
@@ -208,8 +251,11 @@ async function uploadRunData(formData) {
 
         // แปลงเป็น JSON ถ้าเป็นไปได้
         try {
-            return JSON.parse(responseText);
+            const jsonResponse = JSON.parse(responseText);
+            console.log('Parsed JSON response:', jsonResponse);
+            return jsonResponse;
         } catch (e) {
+            console.log('Response is not JSON, returning as text');
             return { success: true, message: responseText };
         }
     } catch (error) {
@@ -255,6 +301,8 @@ function shareRunResult() {
                 previewImageUrl: currentRunData.imageurl
             });
         }
+        
+        console.log('Sharing content via LINE:', shareContent);
         
         // แชร์ข้อมูล
         liff.shareTargetPicker(shareContent)
