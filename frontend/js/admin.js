@@ -79,6 +79,9 @@ $(document).ready(function() {
         });
         
         $('#confirmDelete').on('click', deleteRunData);
+        
+        $('#exportRunsExcel').on('click', exportRunsToExcel);
+        $('#exportRankingExcel').on('click', exportRankingToExcel);
     }
     
     // ฟังก์ชันโหลดข้อมูล
@@ -355,6 +358,71 @@ $(document).ready(function() {
     // เรียกฟังก์ชันโหลดข้อมูลอันดับด้วย
     loadRankingData();
 });
+
+    // เพิ่มฟังก์ชัน Export รายการวิ่งเป็น Excel
+function exportRunsToExcel() {
+    // สร้างข้อมูลสำหรับ Excel
+    const data = runsData.map(item => {
+        // แปลงวันที่ให้อยู่ในรูปแบบที่อ่านง่าย
+        const runDate = new Date(item.rundate).toLocaleDateString('th-TH');
+        const createdAt = new Date(item.createdat).toLocaleDateString('th-TH');
+        
+        // ดึงข้อมูลผู้ใช้
+        const user = item.users || {};
+        const displayName = user.displayname || 'ไม่ระบุชื่อ';
+        const phoneNumber = item.userDetails?.phonenumber || '-';
+        
+        return {
+            'ชื่อผู้ใช้': displayName,
+            'เบอร์โทรศัพท์': phoneNumber,
+            'วันที่วิ่ง': runDate,
+            'ระยะทาง (กม.)': parseFloat(item.distance).toFixed(2),
+            'เวลา (นาที)': parseFloat(item.duration).toFixed(2),
+            'URL รูปภาพ': item.imageurl || '-',
+            'วันที่บันทึก': createdAt
+        };
+    });
+    
+    // สร้าง Worksheet
+    const ws = XLSX.utils.json_to_sheet(data);
+    
+    // สร้าง Workbook และเพิ่ม Worksheet
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "รายการวิ่ง");
+    
+    // ส่งออกเป็นไฟล์ Excel
+    XLSX.writeFile(wb, "รายการวิ่ง_" + new Date().toISOString().split('T')[0] + ".xlsx");
+}
+
+// เพิ่มฟังก์ชัน Export อันดับนักวิ่งเป็น Excel
+function exportRankingToExcel() {
+    // ดึงข้อมูลจากตาราง
+    const dataTable = $('#rankingTable').DataTable();
+    const data = dataTable.rows().data();
+    
+    // แปลงข้อมูลให้เหมาะสำหรับ Excel
+    const excelData = [];
+    for (let i = 0; i < data.length; i++) {
+        const row = data[i];
+        excelData.push({
+            'อันดับ': row[0],
+            'ชื่อผู้ใช้': row[1],
+            'ระยะทางรวม (กม.)': row[3],
+            'จำนวนครั้ง': row[4],
+            'ระยะทางเฉลี่ย/ครั้ง': row[5]
+        });
+    }
+    
+    // สร้าง Worksheet
+    const ws = XLSX.utils.json_to_sheet(excelData);
+    
+    // สร้าง Workbook และเพิ่ม Worksheet
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "อันดับนักวิ่ง");
+    
+    // ส่งออกเป็นไฟล์ Excel
+    XLSX.writeFile(wb, "อันดับนักวิ่ง_" + new Date().toISOString().split('T')[0] + ".xlsx");
+}
     
     // ฟังก์ชันอัปเดตข้อมูล
     async function updateRunData() {
