@@ -58,21 +58,20 @@ function handleFileChange(event) {
     }
 }
 
-// เปลี่ยนฟังก์ชัน handleSubmit ให้ใช้ uploadFile แทน fetch โดยตรง
 async function handleSubmit() {
     console.log("Submit button clicked");
     
-    // Show debug overlay
+    // แสดงข้อความ debug
     showDebug("เริ่มกระบวนการส่งข้อมูล...");
     
     try {
-        // Get form values
+        // รับค่าจากฟอร์ม
         const rundate = document.getElementById('rundate').value;
         const distance = document.getElementById('distance').value;
         const duration = document.getElementById('duration').value;
         const proofImage = document.getElementById('proofImage').files[0];
         
-        // Validate form
+        // ตรวจสอบความถูกต้องของข้อมูล
         if (!rundate) {
             showError("กรุณาระบุวันที่วิ่ง");
             return;
@@ -93,17 +92,17 @@ async function handleSubmit() {
             return;
         }
         
-        // Log form data
+        // บันทึกข้อความ debug
         showDebug(`ข้อมูลฟอร์ม: วันที่=${rundate}, ระยะทาง=${distance}, เวลา=${duration}, ไฟล์=${proofImage.name}`);
         
-        // Disable submit button
+        // ปิดการใช้งานปุ่มบันทึก
         const submitButton = document.getElementById('submitButton');
         if (submitButton) {
             submitButton.disabled = true;
             submitButton.textContent = 'กำลังบันทึก...';
         }
         
-        // Get LINE profile
+        // ดึงข้อมูลโปรไฟล์ LINE
         showDebug("กำลังดึงข้อมูลโปรไฟล์ LINE...");
         let userId;
         try {
@@ -115,78 +114,80 @@ async function handleSubmit() {
             return;
         }
         
-        // เตรียมข้อมูลสำหรับส่ง
-        const additionalData = {
-            userid: userId,
-            rundate: rundate,
-            distance: distance,
-            duration: duration
-        };
-        
-        // แสดงข้อมูลที่จะส่ง
-        showDebug(`ข้อมูลที่ส่ง: 
-        - userid: ${userId} 
-        - rundate: ${rundate} 
-        - distance: ${distance} 
-        - duration: ${duration}
-        - file: ${proofImage.name} (${proofImage.size} bytes)`);
-        
-        // ใช้ฟังก์ชัน uploadFile ที่มีอยู่แล้วใน liff-init.js แทน fetch โดยตรง
-        showDebug("กำลังส่งข้อมูลไปยัง API ด้วยฟังก์ชัน uploadFile...");
-        
-        try {
-            // เรียกใช้ uploadFile จาก liff-init.js
+        // สร้าง FormData สำหรับส่งข้อมูล
+        showDebug("กำลังเตรียมข้อมูลสำหรับส่ง...");
         const formData = new FormData();
         
-        // สำคัญมาก: ต้องใช้ชื่อ 'file' ไม่ใช่ชื่ออื่น
-        formData.append('file', proofImage);  // ใช้ชื่อ 'file' ตรงตามที่ backend คาดหวัง
-        
-        // เพิ่มข้อมูลอื่นๆ
-        formData.append('userid', userId);
-        formData.append('rundate', rundate);
+        // สำคัญ: ต้องใช้ชื่อฟิลด์ตรงกับที่ backend กำหนด
+        formData.append('file', proofImage);  // ต้องเป็น 'file' ไม่ใช่ชื่ออื่น
+        formData.append('userid', userId);    // ใช้ 'userid' ตัวพิมพ์เล็ก
+        formData.append('rundate', rundate);  // ใช้ 'rundate' ตัวพิมพ์เล็ก
         formData.append('distance', distance);
         formData.append('duration', duration);
         
-        showDebug("กำลังส่งข้อมูลไปยัง API...");
+        // บันทึกข้อความ debug
+        showDebug(`ข้อมูลที่ส่ง: userid=${userId}, rundate=${rundate}, distance=${distance}, duration=${duration}, file=${proofImage.name}`);
         
-        // ส่งข้อมูลโดยตรงไม่ผ่านฟังก์ชัน uploadFile
+        // ส่งข้อมูลไปยัง API
+        showDebug("กำลังส่งข้อมูลไปยัง API...");
         const response = await fetch('https://runtracker.devapp.cc/api/runs/upload', {
             method: 'POST',
-            // ไม่ต้องกำหนด Content-Type และ headers อื่นๆ
-            body: formData
+            body: formData  // ไม่ต้องกำหนด Content-Type เพราะ browser จะกำหนดให้อัตโนมัติ
         });
         
-            
-            // Handle success
-            showDebug("บันทึกข้อมูลสำเร็จ!");
-            document.getElementById('runForm').classList.add('hidden');
-            document.getElementById('successMessage').classList.remove('hidden');
-            
-           
-            
-            // Setup share button
-            const shareButton = document.getElementById('shareButton');
-            if (shareButton) {
-                shareButton.addEventListener('click', shareRunResult);
-            }
-            
-        } catch (apiError) {
-            showError(`การส่งข้อมูลล้มเหลว: ${apiError.message}`);
-            
-            // Show error message
-            document.getElementById('errorText').textContent = `เกิดข้อผิดพลาดในการบันทึกข้อมูล: ${apiError.message}`;
-            document.getElementById('runForm').classList.add('hidden');
-            document.getElementById('errorMessage').classList.remove('hidden');
-        } finally {
-            // Re-enable submit button
-            if (submitButton) {
-                submitButton.disabled = false;
-                submitButton.textContent = 'บันทึกข้อมูล';
-            }
+        // อ่านข้อมูลตอบกลับ
+        showDebug(`ได้รับการตอบกลับ: ${response.status}`);
+        const responseText = await response.text();
+        showDebug(`ข้อความตอบกลับ: ${responseText}`);
+        
+        // ตรวจสอบสถานะการตอบกลับ
+        if (!response.ok) {
+            throw new Error(`การส่งข้อมูลล้มเหลว: ${response.status} - ${responseText}`);
         }
         
+        // แปลงข้อความตอบกลับเป็น JSON
+        let result;
+        try {
+            result = JSON.parse(responseText);
+            showDebug(`ผลลัพธ์ API: ${JSON.stringify(result)}`);
+        } catch (e) {
+            showDebug("ไม่สามารถแปลงข้อความตอบกลับเป็น JSON ได้");
+        }
+        
+        // บันทึกข้อมูลสำหรับการแชร์
+        window.currentRunData = {
+            rundate: rundate,
+            distance: distance,
+            duration: duration,
+            imageurl: result?.imageurl || result?.run?.imageurl || ''
+        };
+        
+        // แสดงข้อความสำเร็จ
+        showDebug("บันทึกข้อมูลสำเร็จ!");
+        document.getElementById('runForm').classList.add('hidden');
+        document.getElementById('successMessage').classList.remove('hidden');
+        
+        // เพิ่ม event listener สำหรับปุ่มแชร์
+        const shareButton = document.getElementById('shareButton');
+        if (shareButton) {
+            shareButton.addEventListener('click', shareRunResult);
+        }
     } catch (error) {
-        showError(`เกิดข้อผิดพลาด: ${error.message}`);
+        // จัดการข้อผิดพลาด
+        showDebug(`เกิดข้อผิดพลาด: ${error.message}`);
+        console.error('Error submitting run data:', error);
+        
+        // แสดงข้อความผิดพลาด
+        document.getElementById('errorText').textContent = `เกิดข้อผิดพลาดในการบันทึกข้อมูล: ${error.message}`;
+        document.getElementById('runForm').classList.add('hidden');
+        document.getElementById('errorMessage').classList.remove('hidden');
+    } finally {
+        // เปิดการใช้งานปุ่มบันทึกอีกครั้ง
+        const submitButton = document.getElementById('submitButton');
+        if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.textContent = 'บันทึกข้อมูล';
+        }
     }
 }
 
