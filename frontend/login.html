@@ -117,39 +117,25 @@
                 window.location.href = 'runmanagement.html';
             }
         }
-        
-       // ในไฟล์ login.js หรือตรงส่วน login ในไฟล์ admin.js
+        // กลับไปใช้การตรวจสอบเดิมก่อน
 function login() {
     const username = document.getElementById('username').value;
     const password = document.getElementById('password').value;
     
-    // ส่งข้อมูลไปที่ server เพื่อตรวจสอบ
-    fetch('https://runtracker.devapp.cc/api/auth/login', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ username, password })
-    })
-    .then(response => {
-        if (response.ok) {
-            return response.json();
-        }
-        throw new Error('รหัสผ่านไม่ถูกต้อง');
-    })
-    .then(data => {
-        // บันทึก token หรือ session
-        sessionStorage.setItem('adminToken', data.token);
+    // ตรวจสอบชื่อผู้ใช้และรหัสผ่าน (แบบง่าย)
+    if (username === 'admin' && password === 'nbu2025') {
+        // บันทึก session
         sessionStorage.setItem('adminLoggedIn', 'true');
         
         // redirect ไปยังหน้า admin
-        window.location.href = 'runmanagement.html';
-    })
-    .catch(error => {
-        document.getElementById('errorMessage').textContent = error.message;
+        window.location.href = 'admin.html';
+    } else {
+        // แสดงข้อความผิดพลาด
+        document.getElementById('errorMessage').textContent = 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง';
         document.getElementById('errorMessage').style.display = 'block';
-    });
+    }
 }
+  
     </script>
 </body>
 </html>
