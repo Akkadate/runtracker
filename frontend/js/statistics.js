@@ -368,6 +368,7 @@ function renderProgressChart(runData) {
 }
 
 // แก้ไขฟังก์ชัน loadRankingData ให้จัดการกับข้อมูลอันดับได้ดีขึ้น
+// แก้ไขฟังก์ชัน loadRankingData ให้รองรับการแบ่งหน้า
 async function loadRankingData(userId, client) {
     try {
         console.log("Loading ranking data for user:", userId);
@@ -387,69 +388,189 @@ async function loadRankingData(userId, client) {
         
         // บันทึกข้อมูลอันดับไว้ใช้ทั่วไป
         window.rankingData = data || [];
+        window.currentPage = 1; // เริ่มต้นที่หน้าแรก
+        window.itemsPerPage = 10; // แสดง 10 รายการต่อหน้า
         
-        // สร้างตารางอันดับ
-        const tableBody = document.getElementById('rankingTableBody');
-        if (!tableBody) {
-            console.warn("Ranking table body element not found");
-            return;
-        }
+        // สร้างตารางอันดับสำหรับหน้าแรก
+        renderRankingPage(userId);
         
-        tableBody.innerHTML = '';
+        // เพิ่มปุ่มสำหรับเปลี่ยนหน้า
+        createPaginationControls(userId);
         
-        if (data && data.length > 0) {
-            data.forEach((runner, index) => {
-                // ตรวจสอบว่าข้อมูลมีครบไหม
-                if (runner && runner.totaldistance !== undefined) {
-                    const row = document.createElement('tr');
-                    
-                    // ไฮไลท์ผู้ใช้ปัจจุบัน
-                    if (runner.userId === userId) {
-                        row.classList.add('highlight');
-                    }
-                    
-                    row.innerHTML = `
-                        <td>${index + 1}</td>
-                        <td>${runner.displayname || 'ไม่ระบุชื่อ'}</td>
-                        <td>${parseFloat(runner.totaldistance).toFixed(2)}</td>
-                    `;
-                    
-                    tableBody.appendChild(row);
-                }
-            });
-            
-            // อัปเดตอันดับของผู้ใช้ ---------------------------------------------------
-            console.log("Calculating user rank for user:", userId);
-            const userRankIndex = data.findIndex(item => item.userid === userId);
-            console.log("User rank index:", userRankIndex);
-            
-            const currentRankElement = document.getElementById('currentRank');
-            if (currentRankElement) {
-                if (userRankIndex >= 0) {
-                    // อันดับเริ่มจาก 1, ไม่ใช่ 0
-                    const userRank = userRankIndex + 1;
-                    console.log("Setting user rank to:", userRank);
-                    currentRankElement.textContent = userRank;
-                } else {
-                    console.log("User not found in ranking data");
-                    console.log("currentRankElement=" ,userRankIndex);
-                    currentRankElement.textContent = '-';
-                }
-            } else {
-                console.warn("Current rank element not found in the DOM");
-            }
-        } else {
-            console.warn("No ranking data received");
-            // แสดงข้อความว่าไม่มีข้อมูล
-            const row = document.createElement('tr');
-            row.innerHTML = '<td colspan="3" style="text-align: center;">ไม่มีข้อมูลการจัดอันดับ</td>';
-            tableBody.appendChild(row);
-        }
+        // อัปเดตอันดับของผู้ใช้
+        updateUserRank(userId, data);
         
         return data;
     } catch (error) {
         console.error("Error loading ranking data:", error);
         return [];
+    }
+}
+
+// ฟังก์ชันสำหรับแสดงข้อมูลในหน้าปัจจุบัน
+function renderRankingPage(userId) {
+    const data = window.rankingData || [];
+    const currentPage = window.currentPage || 1;
+    const itemsPerPage = window.itemsPerPage || 10;
+    
+    // คำนวณข้อมูลที่จะแสดงในหน้าปัจจุบัน
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = Math.min(startIndex + itemsPerPage, data.length);
+    const pageData = data.slice(startIndex, endIndex);
+    
+    // สร้างตารางอันดับ
+    const tableBody = document.getElementById('rankingTableBody');
+    if (!tableBody) {
+        console.warn("Ranking table body element not found");
+        return;
+    }
+    
+    tableBody.innerHTML = '';
+    
+    if (pageData && pageData.length > 0) {
+        pageData.forEach((runner, pageIndex) => {
+            // ตรวจสอบว่าข้อมูลมีครบไหม
+            if (runner && runner.totaldistance !== undefined) {
+                const row = document.createElement('tr');
+                
+                // คำนวณอันดับจริงในข้อมูลทั้งหมด
+                const actualRank = startIndex + pageIndex + 1;
+                
+                // ไฮไลท์ผู้ใช้ปัจจุบัน
+                if (runner.userid === userId) {
+                    row.classList.add('highlight');
+                }
+                
+                row.innerHTML = `
+                    <td>${actualRank}</td>
+                    <td>${runner.displayname || 'ไม่ระบุชื่อ'}</td>
+                    <td>${parseFloat(runner.totaldistance).toFixed(2)}</td>
+                `;
+                
+                tableBody.appendChild(row);
+            }
+        });
+    } else {
+        console.warn("No ranking data for current page");
+        // แสดงข้อความว่าไม่มีข้อมูล
+        const row = document.createElement('tr');
+        row.innerHTML = '<td colspan="3" style="text-align: center;">ไม่มีข้อมูลการจัดอันดับ</td>';
+        tableBody.appendChild(row);
+    }
+    
+    // อัปเดตหมายเลขหน้า
+    const pageInfo = document.getElementById('pageInfo');
+    if (pageInfo) {
+        pageInfo.textContent = `หน้า ${currentPage} จาก ${Math.ceil(data.length / itemsPerPage)}`;
+    }
+}
+
+// สร้างปุ่มควบคุมการเปลี่ยนหน้า
+function createPaginationControls(userId) {
+    const data = window.rankingData || [];
+    const totalPages = Math.ceil(data.length / (window.itemsPerPage || 10));
+    
+    // ตรวจสอบว่ามีหลายหน้าหรือไม่
+    if (totalPages <= 1) {
+        return; // ไม่ต้องสร้างปุ่มถ้ามีเพียงหน้าเดียว
+    }
+    
+    // สร้างหรือดึงคอนเทนเนอร์ควบคุมการแบ่งหน้า
+    let paginationContainer = document.getElementById('paginationControls');
+    
+    if (!paginationContainer) {
+        // สร้างคอนเทนเนอร์ใหม่ถ้ายังไม่มี
+        paginationContainer = document.createElement('div');
+        paginationContainer.id = 'paginationControls';
+        paginationContainer.className = 'pagination-container';
+        
+        // แทรกเข้าไปก่อนปุ่มแชร์
+        const shareContainer = document.querySelector('.share-container');
+        if (shareContainer) {
+            shareContainer.parentNode.insertBefore(paginationContainer, shareContainer);
+        } else {
+            // หากไม่พบ share-container ให้เพิ่มต่อจากตารางแทน
+            const rankingContainer = document.querySelector('.ranking-container');
+            if (rankingContainer) {
+                rankingContainer.appendChild(paginationContainer);
+            }
+        }
+    }
+    
+    // สร้างปุ่มควบคุม
+    paginationContainer.innerHTML = `
+        <div class="pagination-controls">
+            <button id="prevPage" class="btn-pagination">&laquo; ก่อนหน้า</button>
+            <span id="pageInfo">หน้า 1 จาก ${totalPages}</span>
+            <button id="nextPage" class="btn-pagination">ถัดไป &raquo;</button>
+        </div>
+    `;
+    
+    // เพิ่ม CSS สำหรับปุ่มแบ่งหน้า
+    const style = document.createElement('style');
+    style.textContent = `
+        .pagination-container {
+            margin: 15px 0;
+            text-align: center;
+        }
+        .pagination-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+        .btn-pagination {
+            background-color: #f0f0f0;
+            border: 1px solid #ddd;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .btn-pagination:hover {
+            background-color: #e0e0e0;
+        }
+        #pageInfo {
+            padding: 5px 10px;
+        }
+    `;
+    document.head.appendChild(style);
+    
+    // เพิ่ม Event Listener สำหรับปุ่มเปลี่ยนหน้า
+    document.getElementById('prevPage').addEventListener('click', () => {
+        if (window.currentPage > 1) {
+            window.currentPage--;
+            renderRankingPage(userId);
+        }
+    });
+    
+    document.getElementById('nextPage').addEventListener('click', () => {
+        if (window.currentPage < totalPages) {
+            window.currentPage++;
+            renderRankingPage(userId);
+        }
+    });
+}
+
+// แยกฟังก์ชันอัปเดตอันดับของผู้ใช้ออกมา
+function updateUserRank(userId, data) {
+    // คำนวณอันดับของผู้ใช้
+    console.log("Calculating user rank for user:", userId);
+    const userRankIndex = data.findIndex(item => item.userid === userId);
+    console.log("User rank index:", userRankIndex);
+    
+    const currentRankElement = document.getElementById('currentRank');
+    if (currentRankElement) {
+        if (userRankIndex >= 0) {
+            // อันดับเริ่มจาก 1, ไม่ใช่ 0
+            const userRank = userRankIndex + 1;
+            console.log("Setting user rank to:", userRank);
+            currentRankElement.textContent = userRank;
+        } else {
+            console.log("User not found in ranking data");
+            currentRankElement.textContent = '-';
+        }
+    } else {
+        console.warn("Current rank element not found in the DOM");
     }
 }
 
