@@ -13,7 +13,7 @@ body {
 
 /* เพิ่มในไฟล์ style.css หรือในแท็ก <style> ในหัวของหน้า */
 .chart-container {
-    margin-bottom: 10px !important;
+    margin-bottom: 1px !important;
     margin-top: 0 !important;
     padding-bottom: 0 !important;
     padding-top: 0 !important;
@@ -21,7 +21,7 @@ body {
 
 .chart-container h2 {
     margin-top: 0;
-    margin-bottom: 5px;
+    margin-bottom: 1px;
     font-size: 1.1rem;
 }
 
@@ -40,7 +40,7 @@ body {
 }
 
 .chart-container {
-    margin-bottom: 30px;
+    margin-bottom: 0px;
     height: 300px; /* กำหนดความสูงที่ชัดเจน */
     position: relative; /* จำเป็นสำหรับ responsive chart */
 }
@@ -265,7 +265,7 @@ body {
 
 .chart-container {
  /*  margin-bottom: 30px;  */
-   margin-bottom: 10px !important;  
+   margin-bottom: 1px !important;  
 }
 
 .ranking-container {
