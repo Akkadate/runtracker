@@ -426,7 +426,7 @@ async function loadRankingData(userId, client) {
             
             /* กำหนดให้คอลัมน์ระยะทางรวม (คอลัมน์ที่ 3) แสดงข้อความชิดขวา */
             #rankingTable td:nth-child(3) {
-                text-align: right;
+                text-align: center;
             }
         `;
         document.head.appendChild(tableStyle);
