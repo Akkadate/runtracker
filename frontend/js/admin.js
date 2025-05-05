@@ -1,5 +1,16 @@
 // แก้ไขไฟล์ frontend/js/admin.js
 $(document).ready(function() {
+    // ฟังก์ชัน escapeHTML สำหรับแก้ไขการแสดงชื่อที่มีอักขระพิเศษ
+    function escapeHTML(str) {
+        if (!str) return '';
+        return str
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
     // ตรวจสอบสถานะล็อกอิน
     const isLoggedIn = sessionStorage.getItem('adminLoggedIn');
     
@@ -50,7 +61,10 @@ $(document).ready(function() {
         $('.header').append(logoutBtn);
     }
 
- 
+    function getAuthToken() {
+    return sessionStorage.getItem('adminToken');
+    }
+
     
     // ใช้แบบนี้แทน setupEventListeners ตัวเดิม
     function setupEventListeners() {
@@ -91,8 +105,13 @@ $(document).ready(function() {
     async function loadData() {
         try {
             // โหลดข้อมูลการวิ่งทั้งหมด
-            const response = await fetch(`${API_BASE_URL}/api/runs/admin/all`);
-                       
+       //     const response = await fetch(`${API_BASE_URL}/api/runs/admin/all`);
+             const response = await fetch(`${API_BASE_URL}/api/runs/admin/all`, {
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`
+            }
+        });
+            
             if (!response.ok) {
                 throw new Error(`Server responded with status: ${response.status}`);
             }
@@ -168,7 +187,8 @@ $(document).ready(function() {
             
             // ดึงข้อมูลผู้ใช้
             const user = item.users || {};
-            const displayName = user.displayname || 'ไม่ระบุชื่อ';
+            // แก้ไข: เพิ่ม escapeHTML ที่ชื่อผู้ใช้
+            const displayName = escapeHTML(user.displayname) || 'ไม่ระบุชื่อ';
             const phoneNumber = item.userDetails?.phonenumber || '-';
             
             // สร้าง HTML สำหรับรูปภาพ
@@ -302,9 +322,12 @@ function displayRankingTable(data) {
     
     // สร้างข้อมูลสำหรับตาราง
     const tableData = data.map((item, index) => {
+        // แก้ไข: เพิ่ม escapeHTML ที่ชื่อผู้ใช้
+        const displayName = escapeHTML(item.displayname) || 'ไม่ระบุชื่อ';
+        
         // สร้าง HTML สำหรับรูปโปรไฟล์
         const profileImageHtml = item.pictureurl 
-            ? `<img src="${item.pictureurl}" class="profile-thumbnail" alt="${item.displayname}">`
+            ? `<img src="${item.pictureurl}" class="profile-thumbnail" alt="${displayName}">`
             : '<div class="no-profile">ไม่มีรูป</div>';
         
         // คำนวณระยะทางเฉลี่ยต่อครั้ง
@@ -314,7 +337,7 @@ function displayRankingTable(data) {
         
         return [
             index + 1, // อันดับ
-            item.displayname || 'ไม่ระบุชื่อ',
+            displayName,
             profileImageHtml,
             parseFloat(item.totaldistance).toFixed(2),
             item.totalruns,
@@ -352,13 +375,8 @@ function displayRankingTable(data) {
     document.getElementById('rankingTable').style.display = 'table';
 }
 
-// เพิ่มการเรียกใช้งานในฟังก์ชัน $(document).ready หรือฟังก์ชันโหลดข้อมูลหลัก
-$(document).ready(function() {
-    // ตรวจสอบสถานะล็อกอินและโค้ดอื่นๆ ที่มีอยู่แล้ว
-    
-    // เรียกฟังก์ชันโหลดข้อมูลอันดับด้วย
-    loadRankingData();
-});
+// เรียกฟังก์ชันโหลดข้อมูลอันดับ
+loadRankingData();
 
     // เพิ่มฟังก์ชัน Export รายการวิ่งเป็น Excel
 function exportRunsToExcel() {
@@ -370,7 +388,8 @@ function exportRunsToExcel() {
         
         // ดึงข้อมูลผู้ใช้
         const user = item.users || {};
-        const displayName = user.displayname || 'ไม่ระบุชื่อ';
+        // แก้ไข: เพิ่ม escapeHTML ที่ชื่อผู้ใช้
+        const displayName = escapeHTML(user.displayname) || 'ไม่ระบุชื่อ';
         const phoneNumber = item.userDetails?.phonenumber || '-';
         
         return {
@@ -407,7 +426,7 @@ function exportRankingToExcel() {
         const row = data[i];
         excelData.push({
             'อันดับ': row[0],
-            'ชื่อนักวิ่ง': row[1],
+            'ชื่อนักวิ่ง': row[1], // ชื่อได้รับการ escape HTML แล้วจาก displayRankingTable
             'ระยะทางรวม (กม.)': row[3],
             'จำนวนครั้ง': row[4],
             'ระยะทางเฉลี่ย/ครั้ง': row[5]
