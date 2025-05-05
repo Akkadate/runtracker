@@ -1,4 +1,4 @@
-// js/statistics.js - Complete solution
+// js/statistics.js - Complete solution with HTML escaping fix
 document.addEventListener('DOMContentLoaded', () => {
     console.log("DOM Content Loaded");
     
@@ -25,6 +25,17 @@ document.addEventListener('DOMContentLoaded', () => {
         // liff.login();
     }
 });
+
+// Helper function to escape HTML special characters
+function escapeHTML(str) {
+    if (!str) return '';
+    return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
 
 async function initializeStatisticsPage() {
     try {
@@ -441,9 +452,10 @@ function renderRankingPage(userId) {
                     row.classList.add('highlight');
                 }
                 
+                // แก้ไขตรงนี้: เพิ่มการ escape ชื่อก่อนแสดงผลเพื่อป้องกันปัญหา HTML
                 row.innerHTML = `
                     <td>${actualRank}</td>
-                    <td>${runner.displayname || 'ไม่ระบุชื่อ'}</td>
+                    <td>${escapeHTML(runner.displayname) || 'ไม่ระบุชื่อ'}</td>
                     <td>${parseFloat(runner.totaldistance).toFixed(2)}</td>
                 `;
                 
