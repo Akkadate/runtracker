@@ -410,6 +410,26 @@ async function loadRankingData(userId, client) {
         
         // อัปเดตอันดับของผู้ใช้
         updateUserRank(userId, data);
+
+        // เพิ่ม CSS สำหรับการจัดตำแหน่งข้อความในตาราง
+        const tableStyle = document.createElement('style');
+        tableStyle.textContent = `
+            /* กำหนดให้หัวตารางทั้งหมดแสดงข้อความกึ่งกลาง */
+            #rankingTable th {
+                text-align: center;
+            }
+            
+            /* กำหนดให้คอลัมน์อันดับแสดงข้อความกึ่งกลาง */
+            #rankingTable td:first-child {
+                text-align: center;
+            }
+            
+            /* กำหนดให้คอลัมน์ระยะทางรวม (คอลัมน์ที่ 3) แสดงข้อความชิดขวา */
+            #rankingTable td:nth-child(3) {
+                text-align: right;
+            }
+        `;
+        document.head.appendChild(tableStyle);
         
         return data;
     } catch (error) {
