@@ -378,7 +378,7 @@ function displayRankingTable(data) {
 // เรียกฟังก์ชันโหลดข้อมูลอันดับ
 loadRankingData();
 
-    // เพิ่มฟังก์ชัน Export รายการวิ่งเป็น Excel
+// แก้ไขฟังก์ชัน exportRunsToExcel ให้แสดงชื่อปกติ
 function exportRunsToExcel() {
     // สร้างข้อมูลสำหรับ Excel
     const data = runsData.map(item => {
@@ -388,8 +388,8 @@ function exportRunsToExcel() {
         
         // ดึงข้อมูลผู้ใช้
         const user = item.users || {};
-        // แก้ไข: เพิ่ม escapeHTML ที่ชื่อผู้ใช้
-        const displayName = escapeHTML(user.displayname) || 'ไม่ระบุชื่อ';
+        // ใช้ชื่อโดยตรงไม่ผ่าน escapeHTML เพื่อให้แสดงในไฟล์ Excel ได้อย่างถูกต้อง
+        const displayName = user.displayname || 'ไม่ระบุชื่อ';
         const phoneNumber = item.userDetails?.phonenumber || '-';
         
         return {
@@ -414,23 +414,65 @@ function exportRunsToExcel() {
     XLSX.writeFile(wb, "รายการวิ่ง_" + new Date().toISOString().split('T')[0] + ".xlsx");
 }
 
-// แก้ไขฟังก์ชัน exportRankingToExcel ให้ทำงานกับข้อมูลที่ได้รับจาก runner_rankings view
+// แก้ไขฟังก์ชัน exportRankingToExcel เพื่อให้รองรับการส่งออกชื่อปกติด้วย
 function exportRankingToExcel() {
-    // ดึงข้อมูลจากตาราง
+    // ดึงข้อมูลอันดับโดยตรงจากตาราง DataTable
     const dataTable = $('#rankingTable').DataTable();
-    const data = dataTable.rows().data();
+    const tableData = dataTable.rows().data();
+    
+    // ดึงข้อมูลต้นฉบับจากการเรียก API (ถ้ามี)
+    let rankingData = window.rankingData || []; // ถ้าเก็บข้อมูลไว้ใน window.rankingData
     
     // แปลงข้อมูลให้เหมาะสำหรับ Excel
     const excelData = [];
-    for (let i = 0; i < data.length; i++) {
-        const row = data[i];
-        excelData.push({
-            'อันดับ': row[0],
-            'ชื่อนักวิ่ง': row[1], // ชื่อได้รับการ escape HTML แล้วจาก displayRankingTable
-            'ระยะทางรวม (กม.)': row[3],
-            'จำนวนครั้ง': row[4],
-            'ระยะทางเฉลี่ย/ครั้ง': row[5]
+    
+    // ถ้ามีข้อมูลต้นฉบับ ใช้ข้อมูลนั้นแทน
+    if (rankingData && rankingData.length > 0) {
+        // เรียงลำดับข้อมูลตามระยะทางรวม
+        rankingData.sort((a, b) => b.totaldistance - a.totaldistance);
+        
+        // สร้างข้อมูลสำหรับ Excel จากข้อมูลต้นฉบับ
+        rankingData.forEach((item, index) => {
+            // คำนวณระยะทางเฉลี่ยต่อครั้ง
+            const avgDistance = item.totalruns > 0 
+                ? (item.totaldistance / item.totalruns).toFixed(2)
+                : '0.00';
+                
+            excelData.push({
+                'อันดับ': index + 1,
+                'ชื่อนักวิ่ง': item.displayname || 'ไม่ระบุชื่อ', // ใช้ชื่อโดยตรงไม่ผ่าน escapeHTML
+                'ระยะทางรวม (กม.)': parseFloat(item.totaldistance).toFixed(2),
+                'จำนวนครั้ง': item.totalruns,
+                'ระยะทางเฉลี่ย/ครั้ง': avgDistance
+            });
         });
+    } else {
+        // ถ้าไม่มีข้อมูลต้นฉบับ ใช้ข้อมูลจาก DataTable (อาจมี HTML entities)
+        for (let i = 0; i < tableData.length; i++) {
+            const row = tableData[i];
+            
+            // สร้างฟังก์ชันสำหรับแปลง HTML entities กลับเป็นอักขระปกติ
+            function unescapeHTML(str) {
+                if (!str) return '';
+                return str
+                    .replace(/&lt;/g, '<')
+                    .replace(/&gt;/g, '>')
+                    .replace(/&quot;/g, '"')
+                    .replace(/&#039;/g, "'")
+                    .replace(/&amp;/g, '&');
+            }
+            
+            // แปลง HTML entities กลับเป็นอักขระปกติสำหรับชื่อ
+            const displayName = unescapeHTML(row[1]);
+            
+            excelData.push({
+                'อันดับ': row[0],
+                'ชื่อนักวิ่ง': displayName,
+                'ระยะทางรวม (กม.)': row[3],
+                'จำนวนครั้ง': row[4],
+                'ระยะทางเฉลี่ย/ครั้ง': row[5]
+            });
+        }
     }
     
     // สร้าง Worksheet
